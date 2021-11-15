@@ -78,18 +78,26 @@ public class SaWriter extends Writer {
             ImpalaUtil.setUser(userName);
             ImpalaUtil.setPassword(password);
             DataSource dataSource = ImpalaUtil.defaultDataSource();
+            Connection connection = null;
             try {
-                Connection connection = dataSource.getConnection();
+                connection = dataSource.getConnection();
                 List<TableColumnMetaData> tableColumnMetaDataList = SqlExecutor.query(connection, "DESCRIBE " + table, BeanListHandler.create(TableColumnMetaData.class));
                 if(Objects.isNull(tableColumnMetaDataList) || tableColumnMetaDataList.isEmpty()){
                     throw new DataXException(CommonErrorCode.CONFIG_ERROR,"获取表["+table+"]列元数据为空，请先添加列.");
                 }
-                connection.close();
                 originalConfig.set(KeyConstant.TABLE_COLUMN_META_DATA,JSONObject.toJSONString(tableColumnMetaDataList));
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
                 log.error("获取表[{}]列元数据时发生错误：",table,throwables);
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"获取表["+table+"]列元数据时发生错误.");
+            }finally {
+                if(Objects.nonNull(connection)){
+                    try {
+                        connection.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
             JSONArray saColumnJsonArray = originalConfig.get(KeyConstant.SA_COLUMN, JSONArray.class);

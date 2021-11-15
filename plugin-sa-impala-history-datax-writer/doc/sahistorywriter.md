@@ -4,12 +4,14 @@
 
 ## **实现原理**
 
-```saimpalawriter	```是通过impala JDBC方式，将数据转换为SQL执行插入语句，如果数据量过大，建议直接使用文件方式导入。```saimpalawriter	```支持四种模式，分别为：``insert``、``insertBatch``、``update``、``insertUpdate``。
+```saimpalawriter	```是通过impala JDBC方式，将数据转换为SQL执行插入语句，如果数据量过大，建议直接使用文件方式导入。```saimpalawriter	```支持六种模式，分别为：``insert``、``insertBatch``、``update``、``insertUpdate``、``upsert``、``upsertBatch``。
 
 - ``insert``模式：是通过生成 insert into 表名 values(值1,值2) SQL执行。
 -  ``insertBatch``模式：是通过生成 insert into 表名 values(值1,值2) ,(值1,值2) ,(值1,值2) SQL执行。
 - ``update``模式：是通过生成 update  表名 set 字段名1 = 值1, 字段名2 = 值2 where 字段名3 = 值3 SQL执行。
 - ``insertUpdate``模式：是``insert``模式和``update``模式相结合，首先尝试insert，失败时执行update。
+- ``upsert``模式：是通过生成upsert into 表名 values(值1,值2) SQL执行。
+- ``upsertBatch``模式：是通过生成 upsert into 表名 values(值1,值2) ,(值1,值2) ,(值1,值2) SQL执行。
 
 ## 配置说明
 
@@ -100,7 +102,7 @@
 
 ​		```table```：导入数据的目的表名。
 
-​		`model`：导入数据时执行的模式，可取值有：``insert``、``insertBatch``、``update``、``insertUpdate``。
+​		`model`：导入数据时执行的模式，可取值有：``insert``、``insertBatch``、``update``、``insertUpdate``、``upsert``、``upsertBatch``。
 
 ​		`batchSize`：当``model``为``insertBatch``模式时，批量插入的数量，默认值为500。
 

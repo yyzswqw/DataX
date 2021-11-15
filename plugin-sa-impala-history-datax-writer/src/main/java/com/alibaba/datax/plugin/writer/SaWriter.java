@@ -60,11 +60,13 @@ public class SaWriter extends Writer {
             }
             String model = originalConfig.getString(KeyConstant.MODEL);
             if(Objects.isNull(model) || Objects.equals("",model)){
-                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"model不应该为空！可选值:insert/insertBatch/update/insertUpdate");
+                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"model不应该为空！可选值:insert/insertBatch/update/insertUpdate/upsert/upsertBatch");
             }
             if(!(Objects.equals("insert",model) || Objects.equals("insertBatch",model)
-                    || Objects.equals("update",model) || Objects.equals("insertUpdate",model))){
-                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"model值不正确！可选值:insert/insertBatch/update/insertUpdate");
+                    || Objects.equals("update",model) || Objects.equals("insertUpdate",model)
+                    || Objects.equals("upsert",model) || Objects.equals("upsertBatch",model))
+            ){
+                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"model值不正确！可选值:insert/insertBatch/update/insertUpdate/upsert/upsertBatch");
             }
             if((Objects.equals("update",model) || Objects.equals("insertUpdate",model))
                && originalConfig.getList(KeyConstant.UPDATE_WHERE_COLUMN,new ArrayList<>()).isEmpty()){
@@ -216,13 +218,18 @@ public class SaWriter extends Writer {
                 insertData(sql,tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties,batchList);
                 sql = null;
             }
-            if(Objects.equals("insertBatch",this.model) && !batchList.isEmpty()){
-                String sql = ColumnDataUtil.transformInsertBatchSql(tableName,tableColumnOrderList,this.tableColumnMetaDataMap,batchList);
+            if((Objects.equals("insertBatch",this.model) || Objects.equals("upsertBatch",this.model)) && !batchList.isEmpty()){
+                String model = "INSERT";
+                if(Objects.equals("upsertBatch",this.model)){
+                    model = "UPSERT";
+                }
+                String sql = ColumnDataUtil.transformInsertBatchSql(model,tableName,tableColumnOrderList,this.tableColumnMetaDataMap,batchList);
                 if(!(Objects.isNull(sql) || Objects.equals("",sql))){
                     executeSql(sql);
                 }
                 batchList.clear();
                 sql = null;
+                model = null;
             }
         }
 
@@ -230,16 +237,23 @@ public class SaWriter extends Writer {
                                    Map<String, Object> properties, List<Map<String, Object>> batchList){
             String sql = null;
             if(Objects.equals("insert",this.model)){
-                sql = ColumnDataUtil.transformInsertSql(tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties);
+                sql = ColumnDataUtil.transformInsertSql("INSERT",tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties);
             } else if(Objects.equals("insertBatch",this.model)){
                 batchList.add(properties);
                 if(this.batchSize == batchList.size()){
-                    sql = ColumnDataUtil.transformInsertBatchSql(tableName,tableColumnOrderList,this.tableColumnMetaDataMap,batchList);
+                    sql = ColumnDataUtil.transformInsertBatchSql("INSERT",tableName,tableColumnOrderList,this.tableColumnMetaDataMap,batchList);
                 }
             }else if(Objects.equals("update",this.model)){
                 sql = ColumnDataUtil.transformUpdateSql(tableName,tableColumnOrderList,this.tableColumnMetaDataMap,this.updateWhereColumn,properties);
             }else if(Objects.equals("insertUpdate",this.model)){
-                sql = ColumnDataUtil.transformInsertSql(tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties);
+                sql = ColumnDataUtil.transformInsertSql("INSERT",tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties);
+            }else if(Objects.equals("upsert",this.model)){
+                sql = ColumnDataUtil.transformInsertSql("UPSERT",tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties);
+            }else if(Objects.equals("upsertBatch",this.model)){
+                batchList.add(properties);
+                if(this.batchSize == batchList.size()){
+                    sql = ColumnDataUtil.transformInsertBatchSql("UPSERT",tableName,tableColumnOrderList,this.tableColumnMetaDataMap,batchList);
+                }
             }else{
                 log.info("不支持的模式：{}",this.model);
             }
@@ -248,9 +262,9 @@ public class SaWriter extends Writer {
 
         private void insertData(String sql,String tableName, List<String> tableColumnOrderList, Map<String, TableColumnMetaData> tableColumnMetaDataMap,
                                 Map<String, Object> properties, List<Map<String, Object>> batchList) {
-            if(Objects.equals("insert",this.model)){
+            if(Objects.equals("insert",this.model) || Objects.equals("upsert",this.model)){
                 executeSql(sql);
-            } else if(Objects.equals("insertBatch",this.model)){
+            } else if(Objects.equals("insertBatch",this.model) || Objects.equals("upsertBatch",this.model)){
                 batchList.add(properties);
                 if(this.batchSize == batchList.size()){
                     executeSql(sql);

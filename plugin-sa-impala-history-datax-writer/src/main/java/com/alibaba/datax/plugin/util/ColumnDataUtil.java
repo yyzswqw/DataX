@@ -17,8 +17,8 @@ public class ColumnDataUtil {
 
     private ColumnDataUtil(){}
 
-    public static String transformInsertBatchSql(String tableName, List<String> tableColumnOrderList, Map<String, TableColumnMetaData> tableColumnMetaDataMap, List<Map<String,Object>> propertiesList){
-        StringBuilder sb = new StringBuilder("INSERT INTO ").append(tableName).append("(")
+    public static String transformInsertBatchSql(String model,String tableName, List<String> tableColumnOrderList, Map<String, TableColumnMetaData> tableColumnMetaDataMap, List<Map<String,Object>> propertiesList){
+        StringBuilder sb = new StringBuilder().append(model).append(" INTO ").append(tableName).append("(")
                 .append(tableColumnOrderList.stream().collect(Collectors.joining(","))).append(") VALUES ");
         StringBuilder sbTemp;
         for (Map<String, Object> properties : propertiesList) {
@@ -47,8 +47,8 @@ public class ColumnDataUtil {
         return sb.toString();
     }
 
-    public static String transformInsertSql(String tableName, List<String> tableColumnOrderList, Map<String, TableColumnMetaData> tableColumnMetaDataMap, Map<String,Object> properties){
-        StringBuilder sb = new StringBuilder("INSERT INTO ").append(tableName).append("(")
+    public static String transformInsertSql(String model,String tableName, List<String> tableColumnOrderList, Map<String, TableColumnMetaData> tableColumnMetaDataMap, Map<String,Object> properties){
+        StringBuilder sb = new StringBuilder().append(model).append(" INTO ").append(tableName).append("(")
                 .append(tableColumnOrderList.stream().collect(Collectors.joining(","))).append(") VALUES (");
         int nullCount = 0;
         for (int i = 0; i < tableColumnOrderList.size(); i++) {

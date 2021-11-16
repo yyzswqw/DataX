@@ -115,6 +115,7 @@
         <module>plugin-sa-mysql-history-datax-writer</module>
         <module>plugin-sa-history-datax-reader-common-plugin</module>
         <module>plugin-sa-customize-datax-reader</module>
+        <module>plugin-sa-history-datax-concurrent-monitor</module>
     </modules>
 
     <dependencyManagement>

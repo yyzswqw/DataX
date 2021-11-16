@@ -132,7 +132,7 @@ public class ColumnDataUtil {
             return "\"" + DateUtil.date2Str(d,"yyyy-MM-dd") + "\"";
         }
         log.info("暂不支持的数据类型，impala type:{},value:{},value type:{}",type,value,Objects.isNull(value)?"null":value.getClass());
-        return "null";
+        return "\"" + value.toString() + "\"";
     }
 
 }

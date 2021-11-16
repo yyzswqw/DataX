@@ -69,7 +69,6 @@ public class ConcurrentMonitor {
             help(options);
             return;
         }
-        help(options);
         List<String> cmds = new ArrayList<>();
         String[] commands = cmd.getOptionValues('m');
         String[] fss = cmd.getOptionValues('f');

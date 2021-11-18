@@ -1,6 +1,5 @@
 package com.alibaba.datax.monitor.service;
 
-import com.alibaba.datax.monitor.task.WorkerTask;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
@@ -40,16 +39,13 @@ public class ThreadPoolService {
                         return t;
                     }
                 },
-                new RejectedExecutionHandler() {
-                    @Override
-                    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                        BlockingQueue<Runnable> queue = executor.getQueue();
-                        try {
+                (r, executor) -> {
+                    BlockingQueue<Runnable> queue = executor.getQueue();
+                    try {
 //                    队列满了时，会一直阻塞等待着
-                            queue.put(r);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                        queue.put(r);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
         );

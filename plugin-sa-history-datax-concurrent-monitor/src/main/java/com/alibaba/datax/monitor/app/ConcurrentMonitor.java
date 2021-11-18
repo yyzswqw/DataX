@@ -1,7 +1,9 @@
 package com.alibaba.datax.monitor.app;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.cron.CronUtil;
 import com.alibaba.datax.monitor.service.ThreadPoolService;
 import com.alibaba.datax.monitor.task.WorkerTask;
 import org.apache.commons.cli.*;
@@ -43,10 +45,24 @@ public class ConcurrentMonitor {
                         .build()
         );
         options.addOption(
+                Option.builder("r")
+                        .longOpt("cron")
+                        .hasArg()
+                        .desc("定时任务cron表达式，添加该参数将以定时任务运行")
+                        .build()
+        );
+        options.addOption(
                 Option.builder("f")
                         .longOpt("file")
                         .hasArg()
                         .desc("命令集文件，文件中一行为一个任务")
+                        .build()
+        );
+        options.addOption(
+                Option.builder("cf")
+                        .longOpt("crfl")
+                        .hasArg()
+                        .desc("定时任务型命令集文件，文件中第一行为cron表达式，之后每一行一个命令，即一个任务")
                         .build()
         );
         return options;
@@ -62,6 +78,7 @@ public class ConcurrentMonitor {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
+            e.printStackTrace();
             help(options);
             return;
         }
@@ -90,19 +107,57 @@ public class ConcurrentMonitor {
                 cmds.add(commands[i]);
             }
         }
-        if (cmds.isEmpty()) {
+        String[] cronFile = cmd.getOptionValues("cf");
+        if (cmds.isEmpty() && (cronFile == null || cronFile.length <= 0)) {
             help(options);
             return;
         }
         int availableProcessors = Runtime.getRuntime().availableProcessors();
+        boolean isTiming = false;
+        String cron = cmd.getOptionValue("r");
         String concurrentNum = cmd.getOptionValue('c', (cmds.size() > availableProcessors?availableProcessors:cmds.size())  + "");
         String maxPoolSize = cmd.getOptionValue('p', "500");
-        ThreadPoolService threadPoolService = new ThreadPoolService(Integer.parseInt(concurrentNum), Integer.parseInt(maxPoolSize),cmds.size());
+        if(StrUtil.isNotBlank(cron) && !cmds.isEmpty()){
+            isTiming = true;
+            CronUtil.schedule(cron, (Runnable) () -> {
+                runTask(cmds, concurrentNum, maxPoolSize);
+            });
+        }else if(!cmds.isEmpty()){
+            runTask(cmds, concurrentNum, maxPoolSize);
+        }
+        if(cronFile != null && cronFile.length > 0){
+            isTiming = true;
+            for (String cf : cronFile) {
+                if(StrUtil.isNotBlank(cf)){
+                    File file = new File(cf);
+                    if(file.isFile()){
+                        List<String> cmdList = FileUtil.readLines(file, Charset.defaultCharset());
+                        if(cmdList.size() > 1){
+                            String cr = cmdList.get(0);
+                            cmdList.remove(0);
+                            CronUtil.schedule(cr, (Runnable) () -> {
+                                runTask(cmdList, concurrentNum, maxPoolSize);
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        if(isTiming){
+            //支持秒级
+            CronUtil.setMatchSecond(true);
+            //开启定时任务
+            CronUtil.start(false);
+        }
+
+    }
+
+    private static void runTask(List<String> cmds, String concurrentNum, String maxPoolSize) {
+        ThreadPoolService threadPoolService = new ThreadPoolService(Integer.parseInt(concurrentNum), Integer.parseInt(maxPoolSize), cmds.size());
         for (String command : cmds) {
-            threadPoolService.submit(new WorkerTask(command,threadPoolService.getCountDownLatch()));
+            threadPoolService.submit(new WorkerTask(command, threadPoolService.getCountDownLatch()));
         }
         threadPoolService.shutdown();
-
     }
 
     public static void help(Options options) {

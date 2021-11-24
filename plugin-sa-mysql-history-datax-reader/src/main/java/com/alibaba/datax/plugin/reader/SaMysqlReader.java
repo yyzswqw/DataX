@@ -485,11 +485,13 @@ public class SaMysqlReader extends Reader {
                         record.setColumn(index,new DateColumn( new Date(((java.sql.Date)value).getTime()) ));
                     }else if(value instanceof java.sql.Timestamp){
                         record.setColumn(index,new DateColumn( (Date)value) );
+                    }else if((value instanceof Byte[]) || (value instanceof byte[])){
+                        record.setColumn(index,new BytesColumn( (byte[])value) );
                     }
                     else{
                         DataXException dataXException = DataXException
                                 .asDataXException(
-                                        ReaderErrorCode.UNSUPPORTED_TYPE, String.format("不支持的数据类型type:%s,value:%s", value.getClass().getName(), value));
+                                        ReaderErrorCode.UNSUPPORTED_TYPE, String.format("不支持的数据类型 column:%s,type:%s,value:%s",k, value.getClass().getName(), value));
                         TaskPluginCollector taskPluginCollector = super.getTaskPluginCollector();
                         taskPluginCollector.collectDirtyRecord(record,dataXException);
                     }

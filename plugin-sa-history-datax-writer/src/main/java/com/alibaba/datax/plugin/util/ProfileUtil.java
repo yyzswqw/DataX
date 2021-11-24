@@ -11,7 +11,7 @@ public class ProfileUtil {
 
     public static void process(SensorsAnalytics sa, Map<String, Object> properties) {
         String userDistinctId = (String) properties.get(KeyConstant.USER_DISTINCT_ID);
-        Boolean userIsLoginId = (Boolean) properties.get(KeyConstant.user_is_login_id);
+        Boolean userIsLoginId = Boolean.parseBoolean(properties.get(KeyConstant.user_is_login_id).toString());
 
         String distinctId = String.valueOf(properties.get(userDistinctId));
 

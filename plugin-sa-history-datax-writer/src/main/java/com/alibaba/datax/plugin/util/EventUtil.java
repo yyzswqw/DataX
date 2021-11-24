@@ -11,7 +11,7 @@ public class EventUtil {
 
     public static void process(SensorsAnalytics sa, Map<String, Object> properties) {
         String eventDistinctIdCol = (String) properties.get(KeyConstant.EVENT_DISTINCT_ID_COL);
-        Boolean eventIsLoginId = (Boolean) properties.get(KeyConstant.EVENT_IS_LOGIN_ID);
+        Boolean eventIsLoginId = Boolean.parseBoolean(properties.get(KeyConstant.EVENT_IS_LOGIN_ID).toString());
         String eventEventName = (String) properties.get(KeyConstant.EVENT_EVENT_NAME);
 
         String distinctId = String.valueOf(properties.get(eventDistinctIdCol));

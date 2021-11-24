@@ -13,7 +13,7 @@ public class ItemSetUtil {
 
     public static void process(SensorsAnalytics sa, Map<String, Object> properties) {
         String itemItemType = (String) properties.get(KeyConstant.ITEM_ITEM_TYPE);
-        Boolean itemTypeIsColumn = (Boolean) properties.get(KeyConstant.ITEM_TYPE_IS_COLUMN);
+        Boolean itemTypeIsColumn = Boolean.parseBoolean(properties.get(KeyConstant.ITEM_TYPE_IS_COLUMN).toString());
         String itemItemIdColumn = (String) properties.get(KeyConstant.ITEM_ITEM_ID_COLUMN);
         String itemId = String.valueOf(properties.get(itemItemIdColumn));
 

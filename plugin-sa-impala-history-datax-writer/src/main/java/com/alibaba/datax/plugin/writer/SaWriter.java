@@ -301,7 +301,6 @@ public class SaWriter extends Writer {
             try {
                 connection = ImpalaUtil.defaultDataSource().getConnection();
                 preparedStatement = connection.prepareStatement(sql);
-                log.info("sql : {}",sql);
                 return preparedStatement.execute();
             } catch (SQLException throwables) {
                 throwables.printStackTrace();

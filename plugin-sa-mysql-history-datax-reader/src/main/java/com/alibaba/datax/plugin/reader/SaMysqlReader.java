@@ -501,7 +501,7 @@ public class SaMysqlReader extends Reader {
 
 
         /**
-         * 使用hive row_number函数查询分段
+         * 使用mysql limit函数查询分段
          * @param startPageNo
          * @param endPageNo
          * @param pageSize
@@ -517,7 +517,7 @@ public class SaMysqlReader extends Reader {
         }
 
         /**
-         * 使用hive row_number函数查询分段
+         * 使用mysql limit查询分段
          * @param pageNo
          * @param pageSize
          * @param recordSender

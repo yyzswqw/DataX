@@ -16,6 +16,8 @@ public class TableColumnMetaData implements Serializable {
 
     private String type;
 
+    private Integer typeIndex;
+
     private String comment;
 
     private Boolean primaryKey;

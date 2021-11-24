@@ -12,10 +12,7 @@ import com.alibaba.datax.common.util.Configuration;
 import com.alibaba.datax.plugin.ConverterFactory;
 import com.alibaba.datax.plugin.KeyConstant;
 import com.alibaba.datax.plugin.classloader.PluginClassLoader;
-import com.alibaba.datax.plugin.domain.DataConverter;
-import com.alibaba.datax.plugin.domain.SaColumnItem;
-import com.alibaba.datax.plugin.domain.SaPlugin;
-import com.alibaba.datax.plugin.domain.TableColumnMetaData;
+import com.alibaba.datax.plugin.domain.*;
 import com.alibaba.datax.plugin.util.ColumnDataUtil;
 import com.alibaba.datax.plugin.util.ConverterUtil;
 import com.alibaba.datax.plugin.util.ImpalaUtil;
@@ -27,10 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
+import java.util.Date;
 import java.util.stream.Collectors;
 
 public class SaWriter extends Writer {
@@ -79,18 +75,47 @@ public class SaWriter extends Writer {
             ImpalaUtil.setPassword(password);
             DataSource dataSource = ImpalaUtil.defaultDataSource();
             Connection connection = null;
+            Statement statement = null;
+            ResultSet rs = null;
             try {
                 connection = dataSource.getConnection();
-                List<TableColumnMetaData> tableColumnMetaDataList = SqlExecutor.query(connection, "DESCRIBE " + table, BeanListHandler.create(TableColumnMetaData.class));
+
+                String queryColumnSql = "select * from " + table + " where 1=2";
+                List<TableColumnMetaData> tableColumnMetaDataList = new ArrayList<>();
+                statement = connection.createStatement();
+                rs = statement.executeQuery(queryColumnSql);
+                ResultSetMetaData rsMetaData = rs.getMetaData();
+                for (int i = 0, len = rsMetaData.getColumnCount(); i < len; i++) {
+                    TableColumnMetaData meta = new TableColumnMetaData();
+                    meta.setName(rsMetaData.getColumnName(i + 1));
+                    meta.setType(rsMetaData.getColumnTypeName(i + 1));
+                    meta.setTypeIndex(rsMetaData.getColumnType(i + 1));
+                    tableColumnMetaDataList.add(meta);
+                }
                 if(Objects.isNull(tableColumnMetaDataList) || tableColumnMetaDataList.isEmpty()){
                     throw new DataXException(CommonErrorCode.CONFIG_ERROR,"获取表["+table+"]列元数据为空，请先添加列.");
                 }
+
                 originalConfig.set(KeyConstant.TABLE_COLUMN_META_DATA,JSONObject.toJSONString(tableColumnMetaDataList));
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
                 log.error("获取表[{}]列元数据时发生错误：",table,throwables);
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"获取表["+table+"]列元数据时发生错误.");
             }finally {
+                if(Objects.nonNull(rs)){
+                    try {
+                        rs.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if(Objects.nonNull(statement)){
+                    try {
+                        statement.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
                 if(Objects.nonNull(connection)){
                     try {
                         connection.close();

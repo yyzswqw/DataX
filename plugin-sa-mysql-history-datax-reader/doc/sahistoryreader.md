@@ -34,7 +34,11 @@
                         "useRowNumber": true,
                         "username": "",
                         "where": "age > 18",
-                        "pluginColumn": [],
+                        "pluginColumn": ["testA","testB"],
+                        "sqlColumn": [
+                            "select 'a' as testA from tableA where id = '{id}'",
+                            "select 1 as testB from tableB where age > {age}"
+                        ],
                         "plugin": [
                             {
                                 "name": "",
@@ -93,7 +97,11 @@
                         “maxQueryNum”: 50000,
                         "useRowNumber": false,
                         "username": "",
-                        "pluginColumn": [],
+                        "pluginColumn": ["testA","testB"],
+                        "sqlColumn": [
+                            "select 'a' as testA from tableA where id = '{id}'",
+                            "select 1 as testB from tableB where age > {age}"
+                        ],
                         "plugin": [
                             {
                                 "name": "",
@@ -138,7 +146,7 @@
 
 ​		`sa.mysqlUrl`：mysql连接的url。
 
-​		`sa.table`：mysql要查询的表。
+​		`sa.table`：mysql要查询的表，支持子查询表，例如：``( select * from order o left join order_item i on o.id = i.order_id ) t ``。
 
 ​		`useRowNumber`：是否使用limit分页方式，false或为空时，使用时间字段条件过滤方式。
 
@@ -170,7 +178,18 @@
 
 ​		```plugin.param```：插件所需要的参数，具体参数根据插件不同而不同。
 
-​		```pluginColumn```：```plugin```中配置的插件如果加入了一些需要发送给下游写插件，则需要配置该参数列表。值为插件中导入Map中的key，注意key中不要带有```.```点号，实际的key将是点号后边的字符。
+​		```pluginColumn```：```plugin```中配置的插件或者``sqlColumn``配置项+中如果加入了一些需要发送给下游写插件，则需要配置该参数列表。值为插件中导入Map中的key，注意key中不要带有```.```点号，实际的key将是点号后边的字符。
+
+​		```sqlColumn```：在需要关联其他表时，除了在``table``配置项中关联外，可以在这里配置上关联查询，使用花括号``{已获取到的值的变量}``可以取到主表sql获取到的值，注意：1、``{已获取到的值的变量}``前后不会添加引号，若是字符串则需要手动添加，如果获取不到值则会被替换为字符``null``，另外在这里配置的sql获取到列如果要发送给写插件还需要在``pluginColumn``配置项中配置列名。2、若sql中是一对多关系，则会分裂为多条数据发送到写插件。例如：
+
+```json
+"sqlColumn":[
+    "select guid as testA from customer_source where name = '{name}' limit 2",       ## sql1
+	"select mobile as testB from customer_source where name = '{ name }' limit 2"    ## sql2
+]
+```
+
+主查询中有3条数据，每条数据都会执行sql1和sql2关联查询出guid和mobile,如果sql1，sql2都查询到了两条，主数据的每条数据在执行完sql1时会分裂为2条，在执行sql2时会在sql1分裂后的结果基础上再分裂即为4条，最终发送到写插件的数据量将会是12条。
 
 ## **神策写插件插件规范**
 

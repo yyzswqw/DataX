@@ -121,4 +121,5 @@ public class KeyConstant {
     public static final String MYSQL_VERSION = "mysqlVersion";
     public static final String PLUGIN = "plugin";
     public static final String PLUGIN_COLUMN = "pluginColumn";
+    public static final String SQL_COLUMN = "sqlColumn";
 }

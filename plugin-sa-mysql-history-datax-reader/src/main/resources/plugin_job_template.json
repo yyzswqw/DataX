@@ -17,11 +17,15 @@
             "mysqlUrl": "",
             "table": ""
         },
+        "sqlColumn": [
+            "select 'a' as testA",
+            "select 1 as testB"
+        ],
         "where": "",
         "useRowNumber": false,
         "pageSize": 10000,
         "timeFieldCount": true,
-        "pluginColumn": [],
+        "pluginColumn": ["testA","testB"],
         "plugin": [
             {
                 "name": "",

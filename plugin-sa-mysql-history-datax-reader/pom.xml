@@ -38,6 +38,14 @@
         </dependency>
 
         <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.25</version>
+            <scope>provided</scope>
+        </dependency>
+
+
+        <dependency>
             <groupId>com.alibaba.datax</groupId>
             <artifactId>plugin-sa-history-datax-writer-common-plugin</artifactId>
             <version>0.0.1-SNAPSHOT</version>

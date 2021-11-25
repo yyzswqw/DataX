@@ -31,5 +31,11 @@
             <outputDirectory>plugin/reader/samysqlreader/libs</outputDirectory>
             <scope>runtime</scope>
         </dependencySet>
+
+        <dependencySet>
+            <useProjectArtifact>false</useProjectArtifact>
+            <outputDirectory>plugin/reader/samysqlreader/plugin/8.0.25</outputDirectory>
+            <scope>provided</scope>
+        </dependencySet>
     </dependencySets>
 </assembly>

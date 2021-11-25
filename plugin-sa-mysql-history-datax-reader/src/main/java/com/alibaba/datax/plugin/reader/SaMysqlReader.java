@@ -590,7 +590,7 @@ public class SaMysqlReader extends Reader {
                 List<Map<String, Object>> values = addSqlColumns(item);
                 size += values.size();
                 values.forEach(value -> {
-                    Record record = this.buildRecord(recordSender, item);
+                    Record record = this.buildRecord(recordSender, value);
                     if(!Objects.isNull(record)){
                         recordSender.sendToWriter(record);
                     }
@@ -679,7 +679,7 @@ public class SaMysqlReader extends Reader {
                 List<Map<String, Object>> values = addSqlColumns(item);
                 size += values.size();
                 values.forEach(value -> {
-                    Record record = this.buildRecord(recordSender, item);
+                    Record record = this.buildRecord(recordSender, value);
                     if(!Objects.isNull(record)){
                         recordSender.sendToWriter(record);
                     }
@@ -815,7 +815,7 @@ public class SaMysqlReader extends Reader {
                                         List<Map<String, Object>> values = addSqlColumns(item);
                                         size += values.size();
                                         values.forEach(value -> {
-                                            Record record = this.buildRecord(recordSender, item);
+                                            Record record = this.buildRecord(recordSender, value);
                                             if(!Objects.isNull(record)){
                                                 recordSender.sendToWriter(record);
                                             }
@@ -858,7 +858,7 @@ public class SaMysqlReader extends Reader {
                                 List<Map<String, Object>> values = addSqlColumns(item);
                                 size += values.size();
                                 values.forEach(value -> {
-                                    Record record = this.buildRecord(recordSender, item);
+                                    Record record = this.buildRecord(recordSender, value);
                                     if(!Objects.isNull(record)){
                                         recordSender.sendToWriter(record);
                                     }
@@ -888,7 +888,7 @@ public class SaMysqlReader extends Reader {
                     List<Map<String, Object>> values = addSqlColumns(item);
                     size += values.size();
                     values.forEach(value -> {
-                        Record record = this.buildRecord(recordSender, item);
+                        Record record = this.buildRecord(recordSender, value);
                         if(!Objects.isNull(record)){
                             recordSender.sendToWriter(record);
                         }

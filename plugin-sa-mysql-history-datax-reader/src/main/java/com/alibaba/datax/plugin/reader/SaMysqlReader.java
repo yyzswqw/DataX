@@ -464,7 +464,6 @@ public class SaMysqlReader extends Reader {
             if(!this.sqlColumnList.isEmpty()){
                 for (String sql : this.sqlColumnList) {
                     String sqlTmp = resolveSql(item,sql);
-                    log.info("sql:{}",sqlTmp);
                     List<Map<String, Object>> data = null;
                     try {
                         data = JdbcUtils.executeQuery(MysqlUtil.defaultDataSource(), sqlTmp);
@@ -477,7 +476,7 @@ public class SaMysqlReader extends Reader {
                             ret.get(i).putAll(data.get(0));
                             for (int j = 1; j < data.size(); j++) {
                                 HashMap<String, Object> hashMap = new HashMap<>(v);
-                                hashMap.putAll(data.get(i));
+                                hashMap.putAll(data.get(j));
                                 ret.add(hashMap);
                             }
                         }

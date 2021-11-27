@@ -1,7 +1,5 @@
 package com.alibaba.datax.plugin.writer;
 
-import cn.hutool.db.handler.BeanListHandler;
-import cn.hutool.db.sql.SqlExecutor;
 import com.alibaba.datax.BasePlugin;
 import com.alibaba.datax.common.element.*;
 import com.alibaba.datax.common.exception.CommonErrorCode;
@@ -12,7 +10,10 @@ import com.alibaba.datax.common.util.Configuration;
 import com.alibaba.datax.plugin.ConverterFactory;
 import com.alibaba.datax.plugin.KeyConstant;
 import com.alibaba.datax.plugin.classloader.PluginClassLoader;
-import com.alibaba.datax.plugin.domain.*;
+import com.alibaba.datax.plugin.domain.DataConverter;
+import com.alibaba.datax.plugin.domain.SaColumnItem;
+import com.alibaba.datax.plugin.domain.SaPlugin;
+import com.alibaba.datax.plugin.domain.TableColumnMetaData;
 import com.alibaba.datax.plugin.util.ColumnDataUtil;
 import com.alibaba.datax.plugin.util.ConverterUtil;
 import com.alibaba.datax.plugin.util.ImpalaUtil;
@@ -25,8 +26,8 @@ import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
-import java.util.*;
 import java.util.Date;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SaWriter extends Writer {
@@ -298,10 +299,13 @@ public class SaWriter extends Writer {
             if(Objects.equals("insert",this.model) || Objects.equals("upsert",this.model)){
                 executeSql(sql);
             } else if(Objects.equals("insertBatch",this.model) || Objects.equals("upsertBatch",this.model)){
-                batchList.add(properties);
                 if(this.batchSize == batchList.size()){
                     executeSql(sql);
                     batchList.clear();
+                    return;
+                }
+                if(!Objects.isNull(properties)){
+                    batchList.add(properties);
                 }
             }else if(Objects.equals("update",this.model)){
                 executeSql(sql);

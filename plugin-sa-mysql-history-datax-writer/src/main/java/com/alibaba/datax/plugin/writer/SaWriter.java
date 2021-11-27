@@ -302,12 +302,13 @@ public class SaWriter extends Writer {
             if(Objects.equals(KeyConstant.MODEL_INSERT,this.model) || Objects.equals(KeyConstant.MODEL_REPLACE,this.model) || Objects.equals(KeyConstant.MODEL_UPDATE,this.model)){
                 executeSql(sql);
             } else if(Objects.equals(KeyConstant.MODEL_INSERT_BATCH,this.model) || Objects.equals(KeyConstant.MODEL_REPLACE_BATCH,this.model)){
-                if(!Objects.isNull(properties)){
-                    batchList.add(properties);
-                }
                 if(this.batchSize == batchList.size()){
                     executeSql(sql);
                     batchList.clear();
+                    return;
+                }
+                if(!Objects.isNull(properties)){
+                    batchList.add(properties);
                 }
             }else if(Objects.equals(KeyConstant.MODEL_INSERT_UPDATE,this.model)){
                 boolean flag = executeSql(sql);

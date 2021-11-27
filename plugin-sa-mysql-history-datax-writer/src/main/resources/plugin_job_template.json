@@ -5,6 +5,8 @@
         "table": "",
         "model": "insert",
         "batchSize": 100,
+        "insUpNotUpCol": [""],
+        "nullValueIsUpdate": true,
         "column": [
             {
                 "index":0,

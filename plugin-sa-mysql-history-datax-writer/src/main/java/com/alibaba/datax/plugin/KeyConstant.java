@@ -145,6 +145,14 @@ public class KeyConstant {
     public static final String UPDATE = "UPDATE";
 
     public static final String REPLACE = "REPLACE";
+    /**
+     * insertUpdate模式在update时不更新的列
+     */
+    public static final String INSERT_UPDATE_MODEL_NOT_UPDATE_COLUMN = "insUpNotUpCol";
+    /**
+     * 在update时，空值是否会被更新
+     */
+    public static final String NULL_VALUE_IS_UPDATE = "nullValueIsUpdate";
 
 
 }

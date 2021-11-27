@@ -158,7 +158,8 @@ public class SaWriter extends Writer {
         private String model;
         private int batchSize;
         private List<String> updateWhereColumn;
-
+        private List<String> insertUpdateModelNotUpdateColumnList;
+        private boolean nullValueIsUpdate;
 
         public void startWrite(RecordReceiver recordReceiver) {
             Record record = null;
@@ -278,7 +279,9 @@ public class SaWriter extends Writer {
                     sql = ColumnDataUtil.transformInsertBatchSql("INSERT",tableName,tableColumnOrderList,this.tableColumnMetaDataMap,batchList);
                 }
             }else if(Objects.equals("update",this.model)){
-                sql = ColumnDataUtil.transformUpdateSql(tableName,tableColumnOrderList,this.tableColumnMetaDataMap,this.updateWhereColumn,properties);
+                sql = ColumnDataUtil.transformUpdateSql(tableName,tableColumnOrderList,
+                        this.tableColumnMetaDataMap,this.updateWhereColumn,properties,
+                        this.insertUpdateModelNotUpdateColumnList,this.nullValueIsUpdate);
             }else if(Objects.equals("insertUpdate",this.model)){
                 sql = ColumnDataUtil.transformInsertSql("INSERT",tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties);
             }else if(Objects.equals("upsert",this.model)){
@@ -312,7 +315,9 @@ public class SaWriter extends Writer {
             }else if(Objects.equals("insertUpdate",this.model)){
                 boolean flag = executeSql(sql);
                 if(!flag){
-                    String updateSql = ColumnDataUtil.transformUpdateSql(tableName,tableColumnOrderList,this.tableColumnMetaDataMap,this.updateWhereColumn,properties);
+                    String updateSql = ColumnDataUtil.transformUpdateSql(tableName,tableColumnOrderList,
+                            this.tableColumnMetaDataMap,this.updateWhereColumn,properties,
+                            this.insertUpdateModelNotUpdateColumnList,this.nullValueIsUpdate);
                     if(Objects.isNull(updateSql) || Objects.equals("",updateSql)){
                         return;
                     }
@@ -359,6 +364,8 @@ public class SaWriter extends Writer {
             this.model = this.readerConfig.getString(KeyConstant.MODEL);
             this.batchSize = this.readerConfig.getInt(KeyConstant.BATCH_SIZE,500);
             this.updateWhereColumn = this.readerConfig.getList(KeyConstant.UPDATE_WHERE_COLUMN, new ArrayList());
+            this.insertUpdateModelNotUpdateColumnList = this.readerConfig.getList(KeyConstant.INSERT_UPDATE_MODEL_NOT_UPDATE_COLUMN, new ArrayList());
+            this.nullValueIsUpdate = readerConfig.getBool(KeyConstant.NULL_VALUE_IS_UPDATE, true);
             JSONArray saColumnJsonArray = readerConfig.get(KeyConstant.SA_COLUMN, JSONArray.class);
             if(Objects.isNull(saColumnJsonArray)){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"column不应该为空！");

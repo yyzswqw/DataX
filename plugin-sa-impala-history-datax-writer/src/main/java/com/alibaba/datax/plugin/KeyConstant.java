@@ -122,4 +122,12 @@ public class KeyConstant {
     public static final String MODEL = "model";
     public static final String BATCH_SIZE = "batchSize";
     public static final String UPDATE_WHERE_COLUMN = "updateWhereColumn";
+    /**
+     * insertUpdate模式在update时不更新的列
+     */
+    public static final String INSERT_UPDATE_MODEL_NOT_UPDATE_COLUMN = "insUpNotUpCol";
+    /**
+     * 在update时，空值是否会被更新
+     */
+    public static final String NULL_VALUE_IS_UPDATE = "nullValueIsUpdate";
 }

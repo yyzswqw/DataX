@@ -34,6 +34,8 @@
 						"model":"insertBatch",
 						"batchSize":40,
 						"updateWhereColumn":["id"],
+                        "insUpNotUpCol": [""],
+        				"nullValueIsUpdate": true,
                         "column": [
                             {
                                 "index":0,
@@ -107,6 +109,10 @@
 ​		`batchSize`：当``model``为``insertBatch``模式时，批量插入的数量，默认值为500。
 
 ​		`		updateWhereColumn`：当``model``为``insertBatch``或者``update``模式时，生成update语句时的where条件列集合，该配置项中的列需要与column配置项的name值相同。建议使用唯一主键。如column配置列有id，name,age，该配置项为["id","name"],则生成的sql为：update 表名 set age = 值1 where id = 值2 and name = 值3，如果从读插件中获取到name的值为空，则where条件中的name为name is null。
+
+​		`insUpNotUpCol`：当`update`时（``update``、``insertUpdate``模式），不更新的列名，该配置项的可配置`column`配置项中`name`。
+
+​		`nullValueIsUpdate`：当获取到列值为`null`时，是否更新该列为`null`，默认值为`true`。
 
 ​		`column`：导入目的表的列名集合。
 

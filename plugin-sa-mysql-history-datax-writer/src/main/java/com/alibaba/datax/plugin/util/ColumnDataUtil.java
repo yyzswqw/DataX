@@ -71,11 +71,15 @@ public class ColumnDataUtil {
         return sb.toString();
     }
 
-    public static String transformUpdateSql(String model,String tableName, List<String> tableColumnOrderList, Map<String, TableColumnMetaData> tableColumnMetaDataMap, List<String> updateWhereColumn, Map<String, Object> properties) {
+    public static String transformUpdateSql(String model,String tableName, List<String> tableColumnOrderList,
+                                            Map<String, TableColumnMetaData> tableColumnMetaDataMap,
+                                            List<String> updateWhereColumn, Map<String, Object> properties,
+                                            List<String> insertUpdateModelNotUpdateColumnList,boolean nullValueIsUpdate) {
         StringBuilder sb = new StringBuilder().append(model).append(" ").append(tableName).append(" SET ");
         for (String columnName : tableColumnOrderList) {
-            if(updateWhereColumn.contains(columnName) || Objects.isNull(properties.get(columnName))
-              || Objects.isNull(tableColumnMetaDataMap.get(columnName))){
+            if(( updateWhereColumn.contains(columnName) || Objects.isNull(tableColumnMetaDataMap.get(columnName)) ||
+                    insertUpdateModelNotUpdateColumnList.contains(columnName) ) ||
+                ( !nullValueIsUpdate && Objects.isNull(properties.get(columnName)) ) ){
                 continue;
             }
             TableColumnMetaData tableColumnMetaData = tableColumnMetaDataMap.get(columnName);

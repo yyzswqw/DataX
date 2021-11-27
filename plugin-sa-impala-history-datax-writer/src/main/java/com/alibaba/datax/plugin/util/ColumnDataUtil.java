@@ -3,9 +3,6 @@ package com.alibaba.datax.plugin.util;
 import com.alibaba.datax.plugin.domain.TableColumnMetaData;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -69,11 +66,15 @@ public class ColumnDataUtil {
         return sb.toString();
     }
 
-    public static String transformUpdateSql(String tableName, List<String> tableColumnOrderList, Map<String, TableColumnMetaData> tableColumnMetaDataMap, List<String> updateWhereColumn, Map<String, Object> properties) {
+    public static String transformUpdateSql(String tableName, List<String> tableColumnOrderList,
+                                            Map<String, TableColumnMetaData> tableColumnMetaDataMap,
+                                            List<String> updateWhereColumn, Map<String, Object> properties,
+                                            List<String> insertUpdateModelNotUpdateColumnList,boolean nullValueIsUpdate) {
         StringBuilder sb = new StringBuilder("UPDATE ").append(tableName).append(" SET ");
         for (String columnName : tableColumnOrderList) {
-            if(updateWhereColumn.contains(columnName) || Objects.isNull(properties.get(columnName))
-              || Objects.isNull(tableColumnMetaDataMap.get(columnName))){
+            if(( updateWhereColumn.contains(columnName) || Objects.isNull(tableColumnMetaDataMap.get(columnName))||
+                    insertUpdateModelNotUpdateColumnList.contains(columnName) ) ||
+                    ( !nullValueIsUpdate && Objects.isNull(properties.get(columnName)) )){
                 continue;
             }
             TableColumnMetaData tableColumnMetaData = tableColumnMetaDataMap.get(columnName);

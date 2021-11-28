@@ -460,8 +460,9 @@ public class SaMysqlReader extends Reader {
 
         public List<Map<String, Object>> addSqlColumns(Map<String, Object> item){
             List<Map<String, Object>> ret = new ArrayList<>();
-            ret.add(item);
+            ret.add(new HashMap<>(item));
             if(!this.sqlColumnList.isEmpty()){
+                Map<String, Object> multiOldProp = null;
                 for (String sql : this.sqlColumnList) {
                     String sqlTmp = resolveSql(item,sql);
                     List<Map<String, Object>> data = null;
@@ -472,13 +473,14 @@ public class SaMysqlReader extends Reader {
                         }
                         int oldSize = ret.size();
                         for (int i = 0; i < oldSize; i++) {
-                            Map<String, Object> v = ret.get(i);
+                            multiOldProp = new HashMap<>(ret.get(i));
                             ret.get(i).putAll(data.get(0));
                             for (int j = 1; j < data.size(); j++) {
-                                HashMap<String, Object> hashMap = new HashMap<>(v);
+                                HashMap<String, Object> hashMap = new HashMap<>(multiOldProp);
                                 hashMap.putAll(data.get(j));
                                 ret.add(hashMap);
                             }
+                            multiOldProp = null;
                         }
                     } catch (SQLException throwables) {
                         throw new DataXException(ReaderErrorCode.SQL_EXECUTION_ERROR,String.format("sql:%s",sqlTmp));
@@ -488,20 +490,125 @@ public class SaMysqlReader extends Reader {
             return ret;
         }
 
-        private Record buildRecord(RecordSender recordSender, Map<String, Object> item){
-            if(Objects.isNull(item) || item.isEmpty()){
-                return null;
+        /**
+         * 只执行单行数据的插件，如果是多行，内部会交给子节点执行，子节点最终执行单行数据时还是会调用该方法
+         * @param recordCollector
+         * @param recordSender
+         * @param values
+         * @param pluginStart
+         * @param pluginEnd
+         */
+        private void doPlugin(List<Record> recordCollector,RecordSender recordSender,Map<String, Object> values,int pluginStart,int pluginEnd){
+            if(Objects.isNull(this.basePluginList)){
+                return ;
             }
-            if(!Objects.isNull(this.basePluginList)){
-                for (int i = 0; i < this.basePluginList.size(); i++) {
-                    BasePlugin.SAPlugin saPlugin = this.basePluginList.get(i);
-                    boolean process = saPlugin.process(item);
-                    if(!process){
-                        return null;
+            for (int i = pluginStart; i < pluginEnd; i++) {
+                // 第一次是从入口来的主数据调用，一定是单行；子节点调用时，也是单行
+                BasePlugin.SAPlugin saPlugin = this.basePluginList.get(i);
+                boolean process = saPlugin.process(values);
+                if(!process){
+                    break;
+                }
+                //当前插件执行完后如果数据变成了多行，则需要交给子节点执行
+                Object isMultiColumnObj = values.getOrDefault("__$$is_multi_column$$__", false);
+                boolean isMultiColumn = Boolean.parseBoolean(isMultiColumnObj.toString());
+                if(!isMultiColumn) {
+                    continue;
+                }
+                //交给子节点执行
+                List<Map<String, Object>> data = (List<Map<String, Object>>)values.get("data");
+                if(!Objects.isNull(data) && !values.isEmpty()){
+                    for (int j = 0; j < data.size(); j++) {
+                        doPluginSub(recordCollector,recordSender,data.get(j),i+1,pluginEnd);
                     }
+                    return;
                 }
             }
-            Record record = recordSender.createRecord();
+
+        }
+
+        /**
+         * 子节点执行多行数据的插件，内部单行数据的执行还是交给doPlugin执行
+         * @param recordCollector
+         * @param recordSender
+         * @param values
+         * @param pluginStart
+         * @param pluginEnd
+         */
+        private void doPluginSub(List<Record> recordCollector, RecordSender recordSender, Map<String, Object> values, int pluginStart, int pluginEnd) {
+            if(Objects.isNull(this.basePluginList)){
+                return ;
+            }
+            if(pluginStart>0 && pluginStart < this.basePluginList.size()){
+                BasePlugin.SAPlugin saPlugin = this.basePluginList.get(pluginStart);
+                boolean process = saPlugin.process(values);
+                if(!process){
+                    return;
+                }
+            }
+            //该行数据所有插件执行完后需要把数据收集起来，最后一个插件执行完如果变成了多行，则要循环收集
+            if(pluginStart+1 >= pluginEnd){
+                Object isMultiColumnObj = values.getOrDefault("__$$is_multi_column$$__", false);
+                boolean isMultiColumn = Boolean.parseBoolean(isMultiColumnObj.toString());
+                if(isMultiColumn){
+                    List<Map<String, Object>> data = (List<Map<String, Object>>)values.get("data");
+                    if(!Objects.isNull(data) && !values.isEmpty()){
+                        for (int j = 0; j < data.size(); j++) {
+                            Map<String, Object> val = data.get(j);
+                            if(!Objects.isNull(val.get("__$$is_multi_column$$__"))){
+                                return ;
+                            }
+                        Record record = recordSender.createRecord();
+                        doBuildRecord(record,val);
+                        recordCollector.add(record);
+                        }
+                    }
+                }else{
+                    Record record = recordSender.createRecord();
+                    doBuildRecord(record,values);
+                    recordCollector.add(record);
+                }
+                return;
+            }
+            //当前节点执行完后，交给下一个插件执行，如果执行完时是多行，则循环依次单行调用doPlugin方法去执行剩下的所有插件
+            Object isMultiColumnObj = values.getOrDefault("__$$is_multi_column$$__", false);
+            boolean isMultiColumn = Boolean.parseBoolean(isMultiColumnObj.toString());
+            if(!isMultiColumn) {
+                doPluginSub(recordCollector,recordSender,values,pluginStart+1,pluginEnd);
+            }
+            List<Map<String, Object>> data = (List<Map<String, Object>>)values.get("data");
+            if(!Objects.isNull(data) && !values.isEmpty()){
+                for (int j = 0; j < data.size(); j++) {
+                    doPlugin(recordCollector,recordSender,data.get(j),pluginStart+1,pluginEnd);
+                }
+            }
+        }
+
+        private List<Record> buildRecord(List<Record> recordCollector,RecordSender recordSender, Map<String, Object> item){
+            if(Objects.isNull(item) || item.isEmpty()){
+                return recordCollector;
+            }
+            if(!Objects.isNull(this.basePluginList)){
+                doPlugin(recordCollector, recordSender,item, 0, this.basePluginList.size());
+                Object isMultiColumnObj = item.getOrDefault("__$$is_multi_column$$__", false);
+                boolean isMultiColumn = Boolean.parseBoolean(isMultiColumnObj.toString());
+                if(!isMultiColumn){
+                    Record record = recordSender.createRecord();
+                    doBuildRecord(record,item);
+                    recordCollector.add(record);
+                }
+            }else{
+                Record record = recordSender.createRecord();
+                doBuildRecord(record,item);
+                recordCollector.add(record);
+            }
+            return recordCollector;
+        }
+
+        private void doBuildRecord(Record record,Map<String, Object> item ) {
+            if(Objects.isNull(item) || item.isEmpty()){
+                return;
+            }
             Map<String,String> keyMap = new HashMap<>();
             for (String key : item.keySet()) {
                 String k = keyMap.get(keyMap);
@@ -544,8 +651,6 @@ public class SaMysqlReader extends Reader {
                     }
                 }
             }
-
-            return record;
         }
 
 
@@ -589,10 +694,16 @@ public class SaMysqlReader extends Reader {
                 List<Map<String, Object>> values = addSqlColumns(item);
                 size += values.size();
                 values.forEach(value -> {
-                    Record record = this.buildRecord(recordSender, value);
-                    if(!Objects.isNull(record)){
-                        recordSender.sendToWriter(record);
+                    List<Record> vals = new ArrayList<>();
+                    this.buildRecord(vals,recordSender, value);
+                    if(!vals.isEmpty()){
+                        vals.forEach(v-> {
+                            if(!Objects.isNull(v)){
+                                recordSender.sendToWriter(v);
+                            }
+                        });
                     }
+                    vals = null;
                 });
             }
             return size;
@@ -678,10 +789,16 @@ public class SaMysqlReader extends Reader {
                 List<Map<String, Object>> values = addSqlColumns(item);
                 size += values.size();
                 values.forEach(value -> {
-                    Record record = this.buildRecord(recordSender, value);
-                    if(!Objects.isNull(record)){
-                        recordSender.sendToWriter(record);
+                    List<Record> vals = new ArrayList<>();
+                    this.buildRecord(vals,recordSender, value);
+                    if(!vals.isEmpty()){
+                        vals.forEach(v-> {
+                            if(!Objects.isNull(v)){
+                                recordSender.sendToWriter(v);
+                            }
+                        });
                     }
+                    vals = null;
                 });
             }
             return size;
@@ -814,10 +931,16 @@ public class SaMysqlReader extends Reader {
                                         List<Map<String, Object>> values = addSqlColumns(item);
                                         size += values.size();
                                         values.forEach(value -> {
-                                            Record record = this.buildRecord(recordSender, value);
-                                            if(!Objects.isNull(record)){
-                                                recordSender.sendToWriter(record);
+                                            List<Record> vals = new ArrayList<>();
+                                            this.buildRecord(vals,recordSender, value);
+                                            if(!vals.isEmpty()){
+                                                vals.forEach(v-> {
+                                                    if(!Objects.isNull(v)){
+                                                        recordSender.sendToWriter(v);
+                                                    }
+                                                });
                                             }
+                                            vals = null;
                                         });
                                     }
                                     finallyCount.addAndGet(size);
@@ -857,10 +980,16 @@ public class SaMysqlReader extends Reader {
                                 List<Map<String, Object>> values = addSqlColumns(item);
                                 size += values.size();
                                 values.forEach(value -> {
-                                    Record record = this.buildRecord(recordSender, value);
-                                    if(!Objects.isNull(record)){
-                                        recordSender.sendToWriter(record);
+                                    List<Record> vals = new ArrayList<>();
+                                    this.buildRecord(vals,recordSender, value);
+                                    if(!vals.isEmpty()){
+                                        vals.forEach(v-> {
+                                            if(!Objects.isNull(v)){
+                                                recordSender.sendToWriter(v);
+                                            }
+                                        });
                                     }
+                                    vals = null;
                                 });
                             }
                             finallyCount.addAndGet(size);
@@ -887,10 +1016,16 @@ public class SaMysqlReader extends Reader {
                     List<Map<String, Object>> values = addSqlColumns(item);
                     size += values.size();
                     values.forEach(value -> {
-                        Record record = this.buildRecord(recordSender, value);
-                        if(!Objects.isNull(record)){
-                            recordSender.sendToWriter(record);
+                        List<Record> vals = new ArrayList<>();
+                        this.buildRecord(vals,recordSender, value);
+                        if(!vals.isEmpty()){
+                            vals.forEach(v-> {
+                                if(!Objects.isNull(v)){
+                                    recordSender.sendToWriter(v);
+                                }
+                            });
                         }
+                        vals = null;
                     });
                 }
                 return size;

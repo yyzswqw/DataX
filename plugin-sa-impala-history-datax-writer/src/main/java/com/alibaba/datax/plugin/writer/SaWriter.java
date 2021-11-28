@@ -1,5 +1,6 @@
 package com.alibaba.datax.plugin.writer;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.datax.BasePlugin;
 import com.alibaba.datax.common.element.*;
 import com.alibaba.datax.common.exception.CommonErrorCode;
@@ -18,6 +19,7 @@ import com.alibaba.datax.plugin.util.ColumnDataUtil;
 import com.alibaba.datax.plugin.util.ConverterUtil;
 import com.alibaba.datax.plugin.util.ImpalaUtil;
 import com.alibaba.datax.plugin.util.NullUtil;
+import com.alibaba.druid.util.JdbcUtils;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,8 @@ import java.math.BigInteger;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class SaWriter extends Writer {
@@ -57,17 +61,24 @@ public class SaWriter extends Writer {
             }
             String model = originalConfig.getString(KeyConstant.MODEL);
             if(Objects.isNull(model) || Objects.equals("",model)){
-                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"model不应该为空！可选值:insert/insertBatch/update/insertUpdate/upsert/upsertBatch");
+                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"model不应该为空！可选值:insert/insertBatch/update/insertUpdate/upsert/upsertBatch/cusInsertUpdate");
             }
             if(!(Objects.equals("insert",model) || Objects.equals("insertBatch",model)
                     || Objects.equals("update",model) || Objects.equals("insertUpdate",model)
-                    || Objects.equals("upsert",model) || Objects.equals("upsertBatch",model))
+                    || Objects.equals("upsert",model) || Objects.equals("upsertBatch",model)
+                    || Objects.equals("cusInsertUpdate",model))
             ){
-                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"model值不正确！可选值:insert/insertBatch/update/insertUpdate/upsert/upsertBatch");
+                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"model值不正确！可选值:insert/insertBatch/update/insertUpdate/upsert/upsertBatch/cusInsertUpdate");
             }
-            if((Objects.equals("update",model) || Objects.equals("insertUpdate",model))
+            if((Objects.equals("update",model) || Objects.equals("insertUpdate",model)
+                    || Objects.equals("cusInsertUpdate",model))
                && originalConfig.getList(KeyConstant.UPDATE_WHERE_COLUMN,new ArrayList<>()).isEmpty()){
-                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"model为update或者insertUpdate时，updateWhereColumn不能为空！");
+                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"model为update/insertUpdate/cusInsertUpdate时，updateWhereColumn不能为空！");
+            }
+            String customizeInsertUpdateJudgeSqlTemplate = originalConfig.getString(KeyConstant.CUSTOMIZE_INSERT_UPDATE_JUDGE, "");
+            if(Objects.equals(KeyConstant.MODEL_CUSTOMIZE_INSERT_UPDATE,model) &&
+                    StrUtil.isBlank(customizeInsertUpdateJudgeSqlTemplate)){
+                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"cusInsertUpdate模式时，cusInsUpJudge不应该为空！");
             }
             String userName = originalConfig.getString(KeyConstant.USER_NAME,"");
             String password = originalConfig.getString(KeyConstant.PASSWORD,"");
@@ -160,6 +171,9 @@ public class SaWriter extends Writer {
         private List<String> updateWhereColumn;
         private List<String> insertUpdateModelNotUpdateColumnList;
         private boolean nullValueIsUpdate;
+
+        private String customizeInsertUpdateJudgeSqlTemplate;
+        private static Pattern PATTERN = Pattern.compile("\\{(.*?)}");
 
         public void startWrite(RecordReceiver recordReceiver) {
             Record record = null;
@@ -284,6 +298,8 @@ public class SaWriter extends Writer {
                         this.insertUpdateModelNotUpdateColumnList,this.nullValueIsUpdate);
             }else if(Objects.equals("insertUpdate",this.model)){
                 sql = ColumnDataUtil.transformInsertSql("INSERT",tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties);
+            }else if(Objects.equals(KeyConstant.MODEL_CUSTOMIZE_INSERT_UPDATE,this.model)){
+                sql = ColumnDataUtil.transformInsertSql("INSERT",tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties);
             }else if(Objects.equals("upsert",this.model)){
                 sql = ColumnDataUtil.transformInsertSql("UPSERT",tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties);
             }else if(Objects.equals("upsertBatch",this.model)){
@@ -323,10 +339,58 @@ public class SaWriter extends Writer {
                     }
                     executeSql(updateSql);
                 }
+            }else if(Objects.equals(KeyConstant.MODEL_CUSTOMIZE_INSERT_UPDATE,this.model)){
+                String customizeInsertUpdateJudgeSql = resolveSql(properties,this.customizeInsertUpdateJudgeSqlTemplate);
+                boolean isExecuteInsert = executeCusSql(customizeInsertUpdateJudgeSql);
+                if(isExecuteInsert){
+                    isExecuteInsert = executeSql(sql);
+                }
+                if(!isExecuteInsert){
+                    String updateSql = ColumnDataUtil.transformUpdateSql(tableName,tableColumnOrderList,
+                            this.tableColumnMetaDataMap,this.updateWhereColumn,properties,
+                            this.insertUpdateModelNotUpdateColumnList,this.nullValueIsUpdate);
+                    if(Objects.isNull(updateSql) || Objects.equals("",updateSql)){
+                        return;
+                    }
+                    executeSql(updateSql);
+                }
             }else{
                 log.info("不支持的模式：{}",this.model);
             }
 
+        }
+
+        private String resolveSql(Map<String, Object> values,String oldSql){
+            String sql = oldSql;
+            Matcher matcher = PATTERN.matcher(sql);
+            while (matcher.find()) {
+                String oldKey = matcher.group();
+                String key = oldKey.substring(1,matcher.group().length() - 1).trim();
+                sql = sql.replace(oldKey, Objects.isNull(values.get(key))?"null":values.get(key).toString());
+            }
+            return sql;
+        }
+
+        /**
+         * 为true时，执行insert,否则应该执行update
+         * @param sql
+         * @return
+         */
+        private boolean executeCusSql(String sql){
+            if(Objects.isNull(sql) || Objects.equals("",sql)){
+                return true;
+            }
+            try {
+                List<Map<String, Object>> data = JdbcUtils.executeQuery(ImpalaUtil.defaultDataSource(), sql);
+                if(Objects.isNull(data) || data.isEmpty()){
+                    return true;
+                }
+                return false;
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+                log.info("执行SQL失败! sql: {}",sql);
+                return true;
+            }
         }
 
         private boolean executeSql(String sql){
@@ -366,6 +430,11 @@ public class SaWriter extends Writer {
             this.updateWhereColumn = this.readerConfig.getList(KeyConstant.UPDATE_WHERE_COLUMN, new ArrayList());
             this.insertUpdateModelNotUpdateColumnList = this.readerConfig.getList(KeyConstant.INSERT_UPDATE_MODEL_NOT_UPDATE_COLUMN, new ArrayList());
             this.nullValueIsUpdate = readerConfig.getBool(KeyConstant.NULL_VALUE_IS_UPDATE, true);
+            this.customizeInsertUpdateJudgeSqlTemplate = readerConfig.getString(KeyConstant.CUSTOMIZE_INSERT_UPDATE_JUDGE, "");
+            if(Objects.equals(KeyConstant.MODEL_CUSTOMIZE_INSERT_UPDATE,this.model) &&
+                    StrUtil.isBlank(this.customizeInsertUpdateJudgeSqlTemplate)){
+                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"cusInsertUpdate模式时，cusInsUpJudge不应该为空！");
+            }
             JSONArray saColumnJsonArray = readerConfig.get(KeyConstant.SA_COLUMN, JSONArray.class);
             if(Objects.isNull(saColumnJsonArray)){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"column不应该为空！");

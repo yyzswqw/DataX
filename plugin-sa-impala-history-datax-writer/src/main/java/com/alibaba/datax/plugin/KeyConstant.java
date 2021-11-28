@@ -122,6 +122,11 @@ public class KeyConstant {
     public static final String MODEL = "model";
     public static final String BATCH_SIZE = "batchSize";
     public static final String UPDATE_WHERE_COLUMN = "updateWhereColumn";
+
+    /**
+     * 自定义insertUpdate的判断逻辑模式
+     */
+    public static final String MODEL_CUSTOMIZE_INSERT_UPDATE = "cusInsertUpdate";
     /**
      * insertUpdate模式在update时不更新的列
      */
@@ -130,4 +135,8 @@ public class KeyConstant {
      * 在update时，空值是否会被更新
      */
     public static final String NULL_VALUE_IS_UPDATE = "nullValueIsUpdate";
+    /**
+     * 自定义insertUpdate的判断逻辑模式的判断逻辑
+     */
+    public static final String CUSTOMIZE_INSERT_UPDATE_JUDGE = "cusInsUpJudge";
 }

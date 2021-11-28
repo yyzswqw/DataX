@@ -7,6 +7,7 @@
         "batchSize": 100,
         "insUpNotUpCol": [""],
         "nullValueIsUpdate": true,
+        "cusInsUpJudge": "select 1 from order where id = '{ID}' limit 1",
         "column": [
             {
                 "index":0,

@@ -140,6 +140,11 @@ public class KeyConstant {
 
     public static final String MODEL_INSERT_UPDATE = "insertUpdate";
 
+    /**
+     * 自定义insertUpdate的判断逻辑模式
+     */
+    public static final String MODEL_CUSTOMIZE_INSERT_UPDATE = "cusInsertUpdate";
+
     public static final String INSERT = "INSERT";
 
     public static final String UPDATE = "UPDATE";
@@ -153,6 +158,10 @@ public class KeyConstant {
      * 在update时，空值是否会被更新
      */
     public static final String NULL_VALUE_IS_UPDATE = "nullValueIsUpdate";
+    /**
+     * 自定义insertUpdate的判断逻辑模式的判断逻辑
+     */
+    public static final String CUSTOMIZE_INSERT_UPDATE_JUDGE = "cusInsUpJudge";
 
 
 }

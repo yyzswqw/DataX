@@ -4,7 +4,7 @@
 
 ## **实现原理**
 
-```saimpalawriter	```是通过impala JDBC方式，将数据转换为SQL执行插入语句，如果数据量过大，建议直接使用文件方式导入。```saimpalawriter	```支持六种模式，分别为：``insert``、``insertBatch``、``update``、``insertUpdate``、``upsert``、``upsertBatch``。
+```saimpalawriter	```是通过impala JDBC方式，将数据转换为SQL执行插入语句，如果数据量过大，建议直接使用文件方式导入。```saimpalawriter	```支持七种模式，分别为：``insert``、``insertBatch``、``update``、``insertUpdate``、``upsert``、``upsertBatch``、``cusInsertUpdate``。
 
 - ``insert``模式：是通过生成 insert into 表名 values(值1,值2) SQL执行。
 -  ``insertBatch``模式：是通过生成 insert into 表名 values(值1,值2) ,(值1,值2) ,(值1,值2) SQL执行。
@@ -12,6 +12,7 @@
 - ``insertUpdate``模式：是``insert``模式和``update``模式相结合，首先尝试insert，失败时执行update。
 - ``upsert``模式：是通过生成upsert into 表名 values(值1,值2) SQL执行。
 - ``upsertBatch``模式：是通过生成 upsert into 表名 values(值1,值2) ,(值1,值2) ,(值1,值2) SQL执行。
+- ``cusInsertUpdate``模式：是``insert``模式和``update``模式相结合，需要搭配``cusInsUpJudge``参数一起使用,``cusInsUpJudge``参数配置一条`sql`用于校验待插入数据是否存在，如存在``update``否则``insert``。
 
 ## 配置说明
 
@@ -36,6 +37,7 @@
 						"updateWhereColumn":["id"],
                         "insUpNotUpCol": [""],
         				"nullValueIsUpdate": true,
+                        "cusInsUpJudge": "select 1 from order where id = '{ID}' limit 1",
                         "column": [
                             {
                                 "index":0,
@@ -104,15 +106,23 @@
 
 ​		```table```：导入数据的目的表名。
 
-​		`model`：导入数据时执行的模式，可取值有：``insert``、``insertBatch``、``update``、``insertUpdate``、``upsert``、``upsertBatch``。
+​		`model`：导入数据时执行的模式，可取值有：``insert``、``insertBatch``、``update``、``insertUpdate``、``upsert``、``upsertBatch``、``cusInsertUpdate``。
 
 ​		`batchSize`：当``model``为``insertBatch``模式时，批量插入的数量，默认值为500。
 
 ​		`		updateWhereColumn`：当``model``为``insertBatch``或者``update``模式时，生成update语句时的where条件列集合，该配置项中的列需要与column配置项的name值相同。建议使用唯一主键。如column配置列有id，name,age，该配置项为["id","name"],则生成的sql为：update 表名 set age = 值1 where id = 值2 and name = 值3，如果从读插件中获取到name的值为空，则where条件中的name为name is null。
 
-​		`insUpNotUpCol`：当`update`时（``update``、``insertUpdate``模式），不更新的列名，该配置项的可配置`column`配置项中`name`。
+​		`insUpNotUpCol`：当`update`时（``update``、``insertUpdate``、``cusInsertUpdate``模式），不更新的列名，该配置项的可配置`column`配置项中`name`。
 
 ​		`nullValueIsUpdate`：当获取到列值为`null`时，是否更新该列为`null`，默认值为`true`。
+
+​		`cusInsUpJudge`：``cusInsertUpdate``模式时有效，配置一条`sql`用于校验待插入数据是否存在，如存在``update``否则``insert``，配置的`sql`中可以使用花括号``{已获取到的值的变量}``可以取到`column`配置 中的`name`获取到的值，注意：1、``{已获取到的值的变量}``前后不会添加引号，若是字符串则需要手动添加，如果获取不到值则会被替换为字符``null``。2、这里的`sql`校验逻辑为查询语句若查询出了数据，无论多少，即代表着已存在则执行`update`，否则执行`insert`。这里建议使用`limit`限制返回条数。例如：
+
+```json
+"cusInsUpJudge":{
+    "select 1 from customer_source where name = '{name}' limit 1"
+}
+```
 
 ​		`column`：导入目的表的列名集合。
 

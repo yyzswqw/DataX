@@ -1,16 +1,16 @@
 ## 快速介绍
 
-```samysqlreader```是用于将mysql中的数据通过jdbc方式导出的插件，可以使用两种方式之一，第一种是使用limit分页方式通过分页查询数据，第二种是使用时间字段条件过滤查询数据。
+```sasqlserverreader```是用于将SQL Server中的数据通过jdbc方式导出的插件，可以使用两种方式之一，第一种是使用row_number分页方式通过分页查询数据，第二种是使用时间字段条件过滤查询数据(当过滤后的数据量依然很大时，会采用row_number分页)，所以需要sql server 版本大于等于2005。
 
 ## **实现原理**
 
-```samysqlreader```是通过mysql的limit分页方式实现分页批量获取数据，或者时间条件过滤数据，拼接SQL获取数据
+```sasqlserverreader```是通过row_number分页方式实现分页批量获取数据，或者时间条件过滤数据，拼接SQL获取数据。
 
 ## 配置说明
 
-### 使用limit分页函数方式
+### 使用row_number分页函数方式
 
-以下配置仅limit分页方式全部配置参数
+以下配置仅row_number分页方式全部配置参数
 
 ```json
 {
@@ -23,12 +23,13 @@
                         "column": [
                             "name","age","id","update_date","date_str"
                         ],
-                        "mysqlVersion": "1.0.0",
+                        "rowNumberOrderBy": "id",
+                        "version": "1.0.0",
                         "pageSize": 15,
                         "password": "",
                         "receivePageSize": 10,
                         "sa": {
-                            "mysqlUrl": "jdbc:mysql://10.120.232.3:10000/test",
+                            "driverUrl": "jdbc:sqlserver://localhost:1433;DatabaseName=Test",
                             "table": "apple"
                         },
                         "useRowNumber": true,
@@ -82,19 +83,19 @@
                         "column": [
                             "name","age","id","update_date","date_str"
                         ],
-                        "mysqlVersion": "1.0.0",
+                        "version": "1.0.0",
                         "datePattern": "yyyy-MM-dd",
                         "endTime": "2021-06-24",
                         "password": "",
                         "sa": {
-                            "mysqlUrl": "jdbc:mysql://10.120.232.3:10000/test",
+                            "driverUrl": "jdbc:sqlserver://localhost:1433;DatabaseName=Test",
                             "table": "apple"
                         },
                         "startTime": "2021-06-14",
                         "taskNum": 5,
                         "timeFieldName": "update_date",
                         "timeInterval": 1000,
-                        "maxQueryNum": 50000,
+                        “maxQueryNum”: 50000,
                         "useRowNumber": false,
                         "username": "",
                         "pluginColumn": ["testA","testB"],
@@ -134,23 +135,25 @@
 
 ### ``read``
 
-​		```mysqlVersion```：需要使用的mysql版本，该属性取值为读插件的mysqllib目录下的某一文件夹名称，在该文件夹下放入配置的mysql版本所需要的依赖（不要存在子文件夹）,该值必须配置。例如：在该读插件的mysqllib有文件夹1.0.0，则该参数值为1.0.0，在1.0.0目录下需要放置依赖mysql驱动的jar包。
+​		```version```：需要使用的驱动版本，该属性取值为读插件的driver目录下的某一文件夹名称，在该文件夹下放入配置的SQL Server版本所需要的依赖（不要存在子文件夹）,该值必须配置。例如：在该读插件的driver下有文件夹1.0.0，则该参数值为1.0.0，在1.0.0目录下需要放置依赖驱动的jar包。
 
-​		`column`：mysql表中需要查询的字段名列表。
+​		`column`：表中需要查询的字段名列表。
 
-​		`pageSize`：使用limit分页方式时，分页的大小，默认值10000。
+​		`rowNumberOrderBy`：使用row_number方式是必填，该配置项对应着row_number语法中order by中的字段。
 
-​		`password`：连接mysql的密码。
+​		`pageSize`：使用row_number分页方式时，分页的大小，默认值10000。
 
-​		`receivePageSize`：使用limit分页方式时，每个task负责的页数，默认值5。
+​		`password`：连接数据库的密码。
 
-​		`sa.mysqlUrl`：mysql连接的url。
+​		`receivePageSize`：使用row_number分页方式时，每个task负责的页数，默认值5。
 
-​		`sa.table`：mysql要查询的表，支持子查询表，例如：``( select * from order o left join order_item i on o.id = i.order_id ) t ``。
+​		`sa.driverUrl`：sql server连接的url。
 
-​		`useRowNumber`：是否使用limit分页方式，false或为空时，使用时间字段条件过滤方式。
+​		`sa.table`：要查询的表，支持子查询表，例如：``( select * from order o left join order_item i on o.id = i.order_id ) t ``。
 
-​		`username`：连接mysql的用户名。
+​		`useRowNumber`：是否使用row_number分页方式，false或为空时，使用时间字段条件过滤方式。
+
+​		`username`：连接数据库的用户名。
 
 ​		`where`：使用任意方式时的查询条件。
 

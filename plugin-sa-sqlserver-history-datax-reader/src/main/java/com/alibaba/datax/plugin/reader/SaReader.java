@@ -16,7 +16,7 @@ import com.alibaba.datax.plugin.KeyConstant;
 import com.alibaba.datax.plugin.ReaderErrorCode;
 import com.alibaba.datax.plugin.classloader.DependencyClassLoader;
 import com.alibaba.datax.plugin.domain.SaPlugin;
-import com.alibaba.datax.plugin.util.MysqlUtil;
+import com.alibaba.datax.plugin.util.ConnUtil;
 import com.alibaba.datax.plugin.util.NullUtil;
 import com.alibaba.datax.plugin.util.TypeUtil;
 import com.alibaba.druid.util.JdbcUtils;
@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SaMysqlReader extends Reader {
+public class SaReader extends Reader {
 
     @Slf4j
     @Data
@@ -53,7 +53,7 @@ public class SaMysqlReader extends Reader {
         private String  rowNumCountSql;
         private String  userName;
         private String  password;
-        private String  mysqlUrl;
+        private String  driverUrl;
         private String  sql;
         /**
          * 当使用时间条件过滤时，如果数据量大到不能拆分时，使用分页查询的sql
@@ -65,6 +65,7 @@ public class SaMysqlReader extends Reader {
         private String  tableName;
         private List<String>  columnList;
         private boolean useRowNumber;
+        private String rowNumberOrderBy;
 
         @Override
         public List<Configuration> split(int i) {
@@ -135,12 +136,12 @@ public class SaMysqlReader extends Reader {
             this.tableName = originalConfig.getString(KeyConstant.SA.concat(KeyConstant.POINT).concat(KeyConstant.SA_TABLE));
             this.userName = originalConfig.getString(KeyConstant.USER_NAME,"");
             this.password = originalConfig.getString(KeyConstant.PASSWORD,"");
-            this.mysqlUrl = originalConfig.getString(KeyConstant.SA.concat(KeyConstant.POINT).concat(KeyConstant.SA_MYSQL_URL));
-            String mysqlVersion = originalConfig.getString(KeyConstant.MYSQL_VERSION,"");
-//            校验mysql版本
+            this.driverUrl = originalConfig.getString(KeyConstant.SA.concat(KeyConstant.POINT).concat(KeyConstant.SA_DRIVER_URL));
+            String driverVersion = originalConfig.getString(KeyConstant.DRIVER_VERSION,"");
+//            校验驱动版本
             String curClassPath = DependencyClassLoader.class.getResource("").getFile();
             String rootPath = curClassPath.substring(curClassPath.lastIndexOf(":")+1, curClassPath.lastIndexOf("!"));
-            String path = rootPath.substring(0, rootPath.lastIndexOf("/")).concat("/mysqllib/");
+            String path = rootPath.substring(0, rootPath.lastIndexOf("/")).concat("/driver/");
             File f = new File(path);
             File[] files = f.listFiles();
             List<String> optionalValueList = new ArrayList<>();
@@ -151,18 +152,18 @@ public class SaMysqlReader extends Reader {
                     }
                 }
             }
-            if(StrUtil.isBlank(mysqlVersion) || !optionalValueList.contains(mysqlVersion)){
-                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"mysqlVersion不存在或为空,可选值："+optionalValueList);
+            if(StrUtil.isBlank(driverVersion) || !optionalValueList.contains(driverVersion)){
+                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"version不存在或为空,可选值："+optionalValueList);
             }
-            //动态加载mysql相关依赖，解决mysql版本兼容
-            DependencyClassLoader.loadClassJar("/mysqllib/"+mysqlVersion);
-            if(StrUtil.isBlank(this.tableName) || StrUtil.isBlank(this.mysqlUrl)){
-                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"mysqlUrl和table不能为空");
+            //动态加载驱动相关依赖，解决版本兼容
+            DependencyClassLoader.loadClassJar("/mysqllib/"+driverVersion);
+            if(StrUtil.isBlank(this.tableName) || StrUtil.isBlank(this.driverUrl)){
+                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"driverUrl和table不能为空");
             }
             this.rowNumCountSql = "select count(*) from ".concat(tableName).concat(StrUtil.isBlank(where)?"":"  where ".concat(where));
-            MysqlUtil.setUrl(this.mysqlUrl);
-            MysqlUtil.setUser(this.userName);
-            MysqlUtil.setPassword(this.password);
+            ConnUtil.setUrl(this.driverUrl);
+            ConnUtil.setUser(this.userName);
+            ConnUtil.setPassword(this.password);
 
             String timeFieldName = originalConfig.getString(KeyConstant.TIME_FIELD_NAME,"");
             this.columnList = originalConfig.getList(KeyConstant.COLUMN, String.class);
@@ -172,11 +173,16 @@ public class SaMysqlReader extends Reader {
             String columnStr = CollectionUtil.join(this.columnList, ",");
 
             this.useRowNumber = originalConfig.getBool(KeyConstant.USE_ROW_NUMBER, true);
+            this.rowNumberOrderBy = originalConfig.getString(KeyConstant.ROW_NUMBER_ORDER_BY, "");
             if(!useRowNumber){
                 String startTime = originalConfig.getString(KeyConstant.START_TIME,"");
                 String endTime = originalConfig.getString(KeyConstant.END_TIME,"");
                 if(StrUtil.isBlank(timeFieldName) || StrUtil.isBlank(startTime) || StrUtil.isBlank(endTime) ){
                     throw new DataXException(CommonErrorCode.CONFIG_ERROR,"配置有误，请检查！");
+                }
+            }else{
+                if(StrUtil.isBlank(this.rowNumberOrderBy)){
+                    throw new DataXException(CommonErrorCode.CONFIG_ERROR,"使用row_number分页时，rowNumberOrderBy配置项必填！");
                 }
             }
 
@@ -184,17 +190,18 @@ public class SaMysqlReader extends Reader {
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where));
 
-            this.sqlRowNum = " select ".concat(columnStr).concat(" from ").concat(this.tableName).concat(" where ")
+            this.sqlRowNum = "select top {},* from (  select row_number() over( order by ".concat(timeFieldName).concat(" ) as internalrnums, ")
+                    .concat(columnStr).concat(" from ").concat(this.tableName).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where))
-                    .concat(" limit {},{}  ");
+                    .concat(" ) t where internalrnums > {} ");
 
             this.sqlCount = "select count(*) ".concat(" from ").concat(this.tableName).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where));
 
-            this.rowNumSql = "select ".concat(columnStr).concat(" from ").concat(this.tableName)
-                    .concat(StrUtil.isBlank(where)?"":"  where ".concat(where)).concat(" limit {},{}");
+            this.rowNumSql = "select top {},* from  (  select row_number() over( order by ".concat(this.rowNumberOrderBy).concat(" ) as internalrnums, ").concat(columnStr).concat(" from ").concat(this.tableName)
+                    .concat(StrUtil.isBlank(where)?"":"  where ".concat(where)).concat(" ) t where internalrnums > {} ");
 
             originalConfig.set(KeyConstant.SQL_TEMPLATE,this.sql);
             originalConfig.set(KeyConstant.SQL_COUNT_TEMPLATE,this.sqlCount);
@@ -216,7 +223,7 @@ public class SaMysqlReader extends Reader {
             List<List<Long>> list = new ArrayList<>();
             Double size = 0D;
             try {
-                Connection connection = MysqlUtil.defaultDataSource().getConnection();
+                Connection connection = ConnUtil.defaultDataSource().getConnection();
                 size = SqlExecutor.query(connection, this.rowNumCountSql, new RsHandler<Double>() {
                     @Override
                     public Double handle(ResultSet rs) throws SQLException {
@@ -467,7 +474,7 @@ public class SaMysqlReader extends Reader {
                     String sqlTmp = resolveSql(item,sql);
                     List<Map<String, Object>> data = null;
                     try {
-                        data = JdbcUtils.executeQuery(MysqlUtil.defaultDataSource(), sqlTmp);
+                        data = JdbcUtils.executeQuery(ConnUtil.defaultDataSource(), sqlTmp);
                         if(Objects.isNull(data) || data.isEmpty()){
                             continue;
                         }
@@ -671,18 +678,18 @@ public class SaMysqlReader extends Reader {
         }
 
         /**
-         * 使用mysql limit查询分段
+         * 使用分页查询分段
          * @param pageNo
          * @param pageSize
          * @param recordSender
          * @return
          */
         private long doSupportRowNumber(long pageNo,long pageSize,RecordSender recordSender){
-            String sqlTmp = StrUtil.format(this.rowNumSql, (pageNo-1)*pageSize,pageSize);
+            String sqlTmp = StrUtil.format(this.rowNumSql,pageSize, (pageNo-1)*pageSize);
             log.info("sql:{}",sqlTmp);
             List<Map<String, Object>> data = null;
             try {
-                data = JdbcUtils.executeQuery(MysqlUtil.defaultDataSource(), sqlTmp);
+                data = JdbcUtils.executeQuery(ConnUtil.defaultDataSource(), sqlTmp);
             } catch (SQLException throwables) {
                 throw new DataXException(ReaderErrorCode.SQL_EXECUTION_ERROR,String.format("sql:%s",sqlTmp));
             }
@@ -775,7 +782,7 @@ public class SaMysqlReader extends Reader {
             log.info("sql:{}",sqlTmp);
             List<Map<String, Object>> data = null;
             try {
-                data = JdbcUtils.executeQuery(MysqlUtil.defaultDataSource(), sqlTmp);
+                data = JdbcUtils.executeQuery(ConnUtil.defaultDataSource(), sqlTmp);
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
                 throw new DataXException(ReaderErrorCode.SQL_EXECUTION_ERROR,String.format("sql:%s",sqlTmp));
@@ -819,7 +826,7 @@ public class SaMysqlReader extends Reader {
             String sqlCountTmp = StrUtil.format(this.sqlCount, startTime, endTime);
             Long count = 0L;
             try {
-                Connection connection = MysqlUtil.defaultDataSource().getConnection();
+                Connection connection = ConnUtil.defaultDataSource().getConnection();
                 count = SqlExecutor.query(connection, sqlCountTmp, new RsHandler<Long>() {
                     @Override
                     public Long handle(ResultSet rs) throws SQLException {
@@ -884,7 +891,7 @@ public class SaMysqlReader extends Reader {
                         if(brotherNum == null){
                             String countTmp = StrUtil.format(this.sqlCount, t.getStartTime(), t.getEndTime());
                             try {
-                                Connection connection = MysqlUtil.defaultDataSource().getConnection();
+                                Connection connection = ConnUtil.defaultDataSource().getConnection();
                                 ct = SqlExecutor.query(connection, countTmp, new RsHandler<Long>() {
                                     @Override
                                     public Long handle(ResultSet rs) throws SQLException {
@@ -919,10 +926,10 @@ public class SaMysqlReader extends Reader {
                                 log.info("startTime:{},endTime:{}，size:{},使用时间已不能再拆分,采用分页方式.默认分页大小:200000,默认分页大小可通过配置pageSize参数修改",t.getStartTime(), t.getEndTime(),ct);
                                 while(curPage <= rounds){
                                     log.info("startTime:{},endTime:{}，curPage:{},totalPages:{},pageSize:{}",t.getStartTime(), t.getEndTime(),curPage,rounds,this.pageSize);
-                                    String sqlRowNum = StrUtil.format(this.sqlRowNum, t.getStartTime(), t.getEndTime(),(curPage-1)*this.pageSize,this.pageSize);
+                                    String sqlRowNum = StrUtil.format(this.sqlRowNum,this.pageSize, t.getStartTime(), t.getEndTime(),(curPage-1)*this.pageSize);
                                     log.info("sql:{}",sqlRowNum);
                                     try {
-                                        data = JdbcUtils.executeQuery(MysqlUtil.defaultDataSource(), sqlRowNum);
+                                        data = JdbcUtils.executeQuery(ConnUtil.defaultDataSource(), sqlRowNum);
                                     } catch (SQLException throwables) {
                                         throw new DataXException(ReaderErrorCode.SQL_EXECUTION_ERROR,String.format("sql:%s",sqlRowNum));
                                     }
@@ -967,7 +974,7 @@ public class SaMysqlReader extends Reader {
                             String sqlTmp = StrUtil.format(this.sql, t.getStartTime(), t.getEndTime());
                             log.info("sql:{}",sqlTmp);
                             try {
-                                data = JdbcUtils.executeQuery(MysqlUtil.defaultDataSource(), sqlTmp);
+                                data = JdbcUtils.executeQuery(ConnUtil.defaultDataSource(), sqlTmp);
                             } catch (SQLException throwables) {
                                 throwables.printStackTrace();
                                 throw new DataXException(ReaderErrorCode.SQL_EXECUTION_ERROR,String.format("sql:%s",sqlTmp));
@@ -1003,7 +1010,7 @@ public class SaMysqlReader extends Reader {
                 String sqlTmp = StrUtil.format(this.sql, startTime, endTime);
                 log.info("sql:{}",sqlTmp);
                 try {
-                    data = JdbcUtils.executeQuery(MysqlUtil.defaultDataSource(), sqlTmp);
+                    data = JdbcUtils.executeQuery(ConnUtil.defaultDataSource(), sqlTmp);
                 } catch (SQLException throwables) {
                     throwables.printStackTrace();
                     throw new DataXException(ReaderErrorCode.SQL_EXECUTION_ERROR,String.format("sql:%s",sqlTmp));

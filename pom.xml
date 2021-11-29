@@ -116,6 +116,7 @@
         <module>plugin-sa-history-datax-reader-common-plugin</module>
         <module>plugin-sa-customize-datax-reader</module>
         <module>plugin-sa-history-datax-concurrent-monitor</module>
+        <module>plugin-sa-sqlserver-history-datax-reader</module>
     </modules>
 
     <dependencyManagement>

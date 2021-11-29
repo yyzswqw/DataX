@@ -1,0 +1,6 @@
+{
+    "name": "sasqlserverreader",
+    "class": "com.alibaba.datax.plugin.reader.SaReader",
+    "description": "sql server reader",
+    "developer": "cocowqw"
+}

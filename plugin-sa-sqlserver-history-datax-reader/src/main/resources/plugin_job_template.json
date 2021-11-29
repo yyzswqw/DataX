@@ -1,0 +1,40 @@
+{
+    "name": "sasqlserverreader",
+    "parameter": {
+        "version": "1.1.0",
+        "username": "",
+        "password": "",
+        "column": [""],
+        "rowNumberOrderBy": "",
+        "startTime": "",
+        "endTime": "",
+        "timeFieldName": "",
+        "timeInterval": 1000,
+        "maxQueryNum": 50000,
+        "datePattern": "",
+        "taskNum": 10,
+        "receivePageSize": 5,
+        "sa":{
+            "driverUrl": "",
+            "table": ""
+        },
+        "sqlColumn": [
+            "select 'a' as testA",
+            "select 1 as testB"
+        ],
+        "where": "",
+        "useRowNumber": false,
+        "pageSize": 10000,
+        "timeFieldCount": true,
+        "pluginColumn": ["testA","testB"],
+        "plugin": [
+            {
+                "name": "",
+                "className": "",
+                "param": {
+                    "ip":""
+                }
+            }
+        ]
+    }
+}

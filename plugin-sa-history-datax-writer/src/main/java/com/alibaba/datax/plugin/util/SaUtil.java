@@ -2,12 +2,14 @@ package com.alibaba.datax.plugin.util;
 
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.datax.plugin.KeyConstant;
+import com.alibaba.datax.plugin.domain.IdentityItem;
 import com.sensorsdata.analytics.javasdk.SensorsAnalytics;
 import com.sensorsdata.analytics.javasdk.consumer.BatchConsumer;
 import com.sensorsdata.analytics.javasdk.consumer.ConcurrentLoggingConsumer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -68,6 +70,23 @@ public class SaUtil {
             EventUtil.process(sa, map);
         } else if (KeyConstant.USER.equalsIgnoreCase(type)) {
             ProfileUtil.process(sa, map);
+        } else if (KeyConstant.ITEM.equalsIgnoreCase(type)) {
+            ItemSetUtil.process(sa, map);
+        } else {
+            log.info("sa类型错误,type:{}", type);
+        }
+
+    }
+
+    public static void process(SensorsAnalytics sa, String type, Map<String, Object> map, List<IdentityItem> identityList,boolean isUnBind) {
+        if (StrUtil.isBlank(type)) {
+            log.info("sa类型不能为空");
+            return;
+        }
+        if (KeyConstant.TRACK.equalsIgnoreCase(type)) {
+            EventUtil.process(sa, map,identityList);
+        } else if (KeyConstant.USER.equalsIgnoreCase(type)) {
+            ProfileUtil.process(sa, map,identityList,isUnBind);
         } else if (KeyConstant.ITEM.equalsIgnoreCase(type)) {
             ItemSetUtil.process(sa, map);
         } else {

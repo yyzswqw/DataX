@@ -122,9 +122,14 @@
                             "isLoginId": true
                         },
                         "type": "item",
+                        "useIDM3": false,
+                        "identity": [
+                            {"idName": "id","column":"id1","isColumn":true}
+                        ],
                         "user": {
                             "distinctIdColumn": "id1",
-                            "isLoginId": true
+                            "isLoginId": true,
+                            "isUnBind": false
                         }
                     }
                 }
@@ -146,6 +151,16 @@
 ​		```isGenerateLog```：是否生成神策json文件，默认值true,如生成文件则需要配合神策导入工具使用，不生成文件时，```sdkDataAddress```参数为神策系统接收数据的url地址，如http://localhost:8106/sa?project=default，在神策系统中可查看。
 
 ​		`type`：导入神策分析的数据类型，可取值有：track/user/item，分别对应神策的事件/用户/属性。
+
+​		`useIDM3`：是否使用ID Mapping 3.0，默认true，老版本请设置为false。
+
+​		`identity`：`useIDM3`为true时，需配置，ID Mapping 3.0的用户标识列表。
+
+​		`identity.idName`：导入到神策系统的用户标识的名称。
+
+​		`identity.column`：导入到神策系统的对应用户标识的值，如果为常量则`identity.isColumn`应配置为false。
+
+​		`identity.isColumn`：导入到神策系统的用户标识的取值是否在`column`中动态获取的值，默认值true,若为常量，这应该配置为false。
 
 ​		`column`：导入神策分析的属性列表。
 
@@ -172,6 +187,8 @@
 ​		`user.distinctIdColumn`：type为user时，作为神策distinctId的列，该属性应该在column列表中，并且该属性不能存在空值。
 
 ​		`user.isLoginId`：type为user时，作为神策distinctId的列是否是登录ID，即用户的唯一标识，布尔值，当该列值为动态的在```column```中时，可将```column```中的列名改为```userIsLoginId```（该列不能存在空值），即可达到动态的效果,该配置项任意即可，将不再生效。
+
+​		`user.isUnBind`：type为user并且`useIDM3`为true时，是否执行user的unbind操作，默认值false。
 
 ​		`item.itemIdColumn`：type为item时，作为神策itemId的列，该属性应该在column列表中，并且该属性不能存在空值。
 

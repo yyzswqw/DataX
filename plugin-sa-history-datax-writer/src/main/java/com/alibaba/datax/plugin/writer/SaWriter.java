@@ -1,6 +1,7 @@
 package com.alibaba.datax.plugin.writer;
 
 import com.alibaba.datax.BasePlugin;
+import com.alibaba.datax.plugin.domain.IdentityItem;
 import com.alibaba.datax.plugin.domain.SaPlugin;
 import com.alibaba.datax.plugin.util.ConverterUtil;
 import com.alibaba.datax.plugin.util.SaUtil;
@@ -45,6 +46,7 @@ public class SaWriter extends Writer {
         public void init() {
             this.originalConfig = super.getPluginJobConf();
             String sdkDataAddress = originalConfig.getString(KeyConstant.SDK_DATA_ADDRESS);
+            Boolean useIDM3 = originalConfig.getBool(KeyConstant.USE_IDM3,true);
             if(StrUtil.isBlank(sdkDataAddress)){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"sdkDataAddress不能为空");
             }
@@ -70,19 +72,46 @@ public class SaWriter extends Writer {
             }
             List<String> saColumnNameList = saColumnList.stream().map(SaColumnItem::getName).collect(Collectors.toList());
             if(KeyConstant.TRACK.equalsIgnoreCase(type)){
-                String distinctId = originalConfig.getString(KeyConstant.TRACK.concat(KeyConstant.POINT).concat(KeyConstant.DISTINCT_ID_COLUMN));
-                Boolean isLoginId = originalConfig.getBool(KeyConstant.TRACK.concat(KeyConstant.POINT).concat(KeyConstant.IS_LOGIN_ID));
+                String distinctId = originalConfig.getString(KeyConstant.TRACK.concat(KeyConstant.POINT).concat(KeyConstant.DISTINCT_ID_COLUMN),"");
+
                 String eventName = originalConfig.getString(KeyConstant.TRACK.concat(KeyConstant.POINT).concat(KeyConstant.EVENT_NAME));
-                if(StrUtil.isBlank(distinctId) || Objects.isNull(isLoginId) ||
-                        StrUtil.isBlank(eventName) || !saColumnNameList.contains(distinctId)){
-                    throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:track时，track属性配置错误或者distinctIdColumn属性未在column中.");
+                if(StrUtil.isBlank(eventName)){
+                    throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:track时，track属性配置错误track.eventName不能为空.");
+                }
+                if(!useIDM3){
+                    Boolean isLoginId = originalConfig.getBool(KeyConstant.TRACK.concat(KeyConstant.POINT).concat(KeyConstant.IS_LOGIN_ID));
+                    if(StrUtil.isBlank(distinctId) || Objects.isNull(isLoginId) || !saColumnNameList.contains(distinctId)){
+                        throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:track时，track属性配置错误或者distinctIdColumn属性未在column中.");
+                    }
+                }else{
+                    String identityStr = originalConfig.getString(KeyConstant.IDENTITY,"[]");
+                    List<IdentityItem> identityList = JSONObject.parseArray(identityStr, IdentityItem.class);
+                    if(identityList.isEmpty()){
+                        throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:track并且使用IDM3时，identity属性不能为空.");
+                    }
+                    for (IdentityItem identityItem : identityList) {
+                        if(NullUtil.isNullOrBlank(identityItem.getIdName()) || NullUtil.isNullOrBlank(identityItem.getColumn()) || NullUtil.isNullOrBlank(identityItem.isColumn())){
+                            throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:track并且使用IDM3时，identity属性配置错误.");
+                        }
+                        if(identityItem.isColumn() && !saColumnNameList.contains(identityItem.getColumn())){
+                            throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:track并且使用IDM3时，identity属性:["+identityItem.getIdName()+"]为列属性时，应该在column中有对应配置列");
+                        }
+                    }
                 }
             }else if(KeyConstant.USER.equalsIgnoreCase(type)){
-                String distinctId = originalConfig.getString(KeyConstant.USER.concat(KeyConstant.POINT).concat(KeyConstant.DISTINCT_ID_COLUMN));
-                Boolean isLoginId = originalConfig.getBool(KeyConstant.USER.concat(KeyConstant.POINT).concat(KeyConstant.IS_LOGIN_ID));
-                if(StrUtil.isBlank(distinctId) || Objects.isNull(isLoginId) ||  !saColumnNameList.contains(distinctId)){
-                    throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:user时，user属性配置错误或者distinctIdColumn属性未在column中.");
+                String distinctId = originalConfig.getString(KeyConstant.USER.concat(KeyConstant.POINT).concat(KeyConstant.DISTINCT_ID_COLUMN),"");
+                if(!useIDM3){
+                    Boolean isLoginId = originalConfig.getBool(KeyConstant.USER.concat(KeyConstant.POINT).concat(KeyConstant.IS_LOGIN_ID),true);
+                    if(StrUtil.isBlank(distinctId) || Objects.isNull(isLoginId) ||  !saColumnNameList.contains(distinctId)){
+                        throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:user时，user属性配置错误或者distinctIdColumn属性未在column中.");
+                    }
+                }else{
+                    List<IdentityItem> identityList = originalConfig.getList(KeyConstant.IDENTITY, new ArrayList<>(), IdentityItem.class);
+                    if(identityList.isEmpty()){
+                        throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:user并且使用IDM3时，identity属性不能为空.");
+                    }
                 }
+
             }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
                 String itemType = originalConfig.getString(KeyConstant.ITEM.concat(KeyConstant.POINT).concat(KeyConstant.ITEM_TYPE));
                 Boolean typeIsColumn = originalConfig.getBool(KeyConstant.ITEM.concat(KeyConstant.POINT).concat(KeyConstant.TYPE_IS_COLUMN));
@@ -117,6 +146,10 @@ public class SaWriter extends Writer {
         private Map<String,Object> itemBaseProp = new HashMap<>();
 
         private List<BasePlugin.SAPlugin> basePluginList;
+
+        private Boolean useIDM3;
+        private Boolean isUnBind = false;
+        private List<IdentityItem> identityList;
 
         public void startWrite(RecordReceiver recordReceiver) {
             Record record = null;
@@ -217,14 +250,22 @@ public class SaWriter extends Writer {
                         properties.remove(col.getName());
                     }
                 }
-                SaUtil.process(sa,type,properties);
+                if(!this.useIDM3){
+                    SaUtil.process(sa,type,properties);
+                }else{
+                    SaUtil.process(sa,type,properties,identityList,this.isUnBind);
+                }
+
             }
         }
 
         public void init() {
             this.readerConfig = super.getPluginJobConf();
             this.type = readerConfig.getString(KeyConstant.TYPE);
-
+            this.useIDM3 = readerConfig.getBool(KeyConstant.USE_IDM3,true);
+            this.isUnBind = readerConfig.getBool(KeyConstant.IS_UNBIND,false);
+            String identityStr = readerConfig.getString(KeyConstant.IDENTITY,"[]");
+            this.identityList = JSONObject.parseArray(identityStr, IdentityItem.class);
             JSONArray saColumnJsonArray = readerConfig.get(KeyConstant.SA_COLUMN, JSONArray.class);
             if(Objects.isNull(saColumnJsonArray)){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"column不应该为空！");
@@ -247,17 +288,21 @@ public class SaWriter extends Writer {
             this.sa = SaUtil.getInstance();
 
             if(KeyConstant.TRACK.equalsIgnoreCase(type)){
-                String eventDistinctIdCol = readerConfig.getString(KeyConstant.TRACK.concat(KeyConstant.POINT).concat(KeyConstant.DISTINCT_ID_COLUMN));
-                Boolean eventIsLoginId = readerConfig.getBool(KeyConstant.TRACK.concat(KeyConstant.POINT).concat(KeyConstant.IS_LOGIN_ID));
                 String eventEventName = readerConfig.getString(KeyConstant.TRACK.concat(KeyConstant.POINT).concat(KeyConstant.EVENT_NAME));
-                trackBaseProp.put(KeyConstant.EVENT_DISTINCT_ID_COL,eventDistinctIdCol);
-                trackBaseProp.put(KeyConstant.EVENT_IS_LOGIN_ID,eventIsLoginId);
+                if(!this.useIDM3){
+                    String eventDistinctIdCol = readerConfig.getString(KeyConstant.TRACK.concat(KeyConstant.POINT).concat(KeyConstant.DISTINCT_ID_COLUMN));
+                    Boolean eventIsLoginId = readerConfig.getBool(KeyConstant.TRACK.concat(KeyConstant.POINT).concat(KeyConstant.IS_LOGIN_ID));
+                    trackBaseProp.put(KeyConstant.EVENT_DISTINCT_ID_COL,eventDistinctIdCol);
+                    trackBaseProp.put(KeyConstant.EVENT_IS_LOGIN_ID,eventIsLoginId);
+                }
                 trackBaseProp.put(KeyConstant.EVENT_EVENT_NAME,eventEventName);
             }else if(KeyConstant.USER.equalsIgnoreCase(type)){
-                String userDistinctId = readerConfig.getString(KeyConstant.USER.concat(KeyConstant.POINT).concat(KeyConstant.DISTINCT_ID_COLUMN));
-                Boolean userIsLoginId = readerConfig.getBool(KeyConstant.USER.concat(KeyConstant.POINT).concat(KeyConstant.IS_LOGIN_ID));
-                userBaseProp.put(KeyConstant.USER_DISTINCT_ID,userDistinctId);
-                userBaseProp.put(KeyConstant.user_is_login_id,userIsLoginId);
+                if(!this.useIDM3){
+                    String userDistinctId = readerConfig.getString(KeyConstant.USER.concat(KeyConstant.POINT).concat(KeyConstant.DISTINCT_ID_COLUMN));
+                    Boolean userIsLoginId = readerConfig.getBool(KeyConstant.USER.concat(KeyConstant.POINT).concat(KeyConstant.IS_LOGIN_ID));
+                    userBaseProp.put(KeyConstant.USER_DISTINCT_ID,userDistinctId);
+                    userBaseProp.put(KeyConstant.user_is_login_id,userIsLoginId);
+                }
             }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
                 String itemItemType = readerConfig.getString(KeyConstant.ITEM.concat(KeyConstant.POINT).concat(KeyConstant.ITEM_TYPE));
                 Boolean itemTypeIsColumn = readerConfig.getBool(KeyConstant.ITEM.concat(KeyConstant.POINT).concat(KeyConstant.TYPE_IS_COLUMN));

@@ -2,7 +2,6 @@ package com.alibaba.datax.plugin.util;
 
 import com.alibaba.datax.plugin.KeyConstant;
 import com.sensorsdata.analytics.javasdk.SensorsAnalytics;
-import com.sensorsdata.analytics.javasdk.bean.ItemRecord;
 import com.sensorsdata.analytics.javasdk.exceptions.InvalidArgumentException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,11 +27,13 @@ public class ItemSetUtil {
         properties.remove(itemItemIdColumn);
 
         try {
-            ItemRecord addRecord = ItemRecord.builder().setItemId(itemId).setItemType(itemItemType)
-                    .addProperties(properties)
-                    .build();
-            sa.itemSet(addRecord);
-        } catch (InvalidArgumentException e) {
+            sa.itemSet(itemItemType,itemId,properties);
+//            java sdk 3.2.20的写法
+//            ItemRecord addRecord = ItemRecord.builder().setItemId(itemId).setItemType(itemItemType)
+//                    .addProperties(properties)
+//                    .build();
+//            sa.itemSet(addRecord);
+        } catch (Exception e) {
             log.info("item Exception: {}", e);
             e.printStackTrace();
         }

@@ -36,6 +36,7 @@
             }
         ],
         "type": "",
+        "useIDM3": false,
         "track": {
             "distinctIdColumn": "",
             "isLoginId": true,
@@ -43,13 +44,17 @@
         },
         "user": {
             "distinctIdColumn": "",
-            "isLoginId": true
+            "isLoginId": true,
+            "isUnBind": false
         },
         "item": {
             "itemType": "",
             "itemIdColumn": "",
             "typeIsColumn": false
         },
+        "identity": [
+            {"idName": "","column":"","isColumn":true}
+        ],
         "plugin": [
             {
                 "name": "",

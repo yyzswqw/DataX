@@ -156,7 +156,7 @@ public class SaReader extends Reader {
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"version不存在或为空,可选值："+optionalValueList);
             }
             //动态加载驱动相关依赖，解决版本兼容
-            DependencyClassLoader.loadClassJar("/mysqllib/"+driverVersion);
+            DependencyClassLoader.loadClassJar("/driver/"+driverVersion);
             if(StrUtil.isBlank(this.tableName) || StrUtil.isBlank(this.driverUrl)){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"driverUrl和table不能为空");
             }

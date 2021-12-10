@@ -190,7 +190,7 @@ public class SaReader extends Reader {
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where));
 
-            this.sqlRowNum = "select top {},* from (  select row_number() over( order by ".concat(timeFieldName).concat(" ) as internalrnums, ")
+            this.sqlRowNum = "select top {} * from (  select row_number() over( order by ".concat(timeFieldName).concat(" ) as internalrnums, ")
                     .concat(columnStr).concat(" from ").concat(this.tableName).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where))
@@ -200,7 +200,8 @@ public class SaReader extends Reader {
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where));
 
-            this.rowNumSql = "select top {},* from  (  select row_number() over( order by ".concat(this.rowNumberOrderBy).concat(" ) as internalrnums, ").concat(columnStr).concat(" from ").concat(this.tableName)
+            this.rowNumSql = "select top {} * from  (  select row_number() over( order by ".concat(this.rowNumberOrderBy).concat(" ) as internalrnums, ")
+                    .concat(columnStr).concat(" from ").concat(this.tableName)
                     .concat(StrUtil.isBlank(where)?"":"  where ".concat(where)).concat(" ) t where internalrnums > {} ");
 
             originalConfig.set(KeyConstant.SQL_TEMPLATE,this.sql);

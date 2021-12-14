@@ -189,10 +189,15 @@ public class SaWriter extends Writer {
                 for (SaColumnItem col : saColumnList) {
                     Column column = record.getColumn(col.getIndex());
                     if(Objects.isNull(column)){
-                        if(!NullUtil.isNullOrBlank(col.getIfNullGiveUp()) && col.getIfNullGiveUp()){
-                            continue A;
+                        //这里为空，很大的原因是index配置不正确
+                        Object value = ConverterUtil.convert(col.getName(),null,col,properties);
+                        if(NullUtil.isNullOrBlank(value)){
+                            if(!NullUtil.isNullOrBlank(col.getIfNullGiveUp()) && col.getIfNullGiveUp()){
+                                continue A;
+                            }
+                            continue;
                         }
-                        continue;
+                        properties.put(col.getName(),value);
                     }else if(column instanceof StringColumn){
                         String v = column.asString();
                         Object value = ConverterUtil.convert(col.getName(),v,col,properties);

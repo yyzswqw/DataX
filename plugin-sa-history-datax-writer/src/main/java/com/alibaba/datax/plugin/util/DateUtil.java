@@ -1,5 +1,6 @@
 package com.alibaba.datax.plugin.util;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.StrUtil;
 
 import java.text.ParseException;
@@ -9,6 +10,10 @@ import java.util.*;
 public class DateUtil {
 
 
+    public static void main(String[] args) {
+        Date convert = Convert.convert(Date.class, "2021-01-01T12:12:23+08:00");
+        System.out.println(convert);
+    }
     private static Set<String> DATE_PATTERN = new HashSet<>();
     private static Map<String, String> DATE_FORMAT = new HashMap<>();
     private static Set<String> CUSTOMIZE_DATE_FORMAT = new LinkedHashSet<>();
@@ -22,6 +27,9 @@ public class DateUtil {
 
         DATE_PATTERN.add("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{1,3}");
         DATE_FORMAT.put("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{1,3}", "yyyy-MM-dd HH:mm:ss.SSS");
+
+        DATE_PATTERN.add("\\d{4}-\\d{2}-\\d{2}'T'\\d{2}:\\d{2}:\\d{2}.\\d{1,3}+08:00");
+        DATE_FORMAT.put("\\d{4}-\\d{2}-\\d{2}'T'\\d{2}:\\d{2}:\\d{2}.\\d{1,3}+08:00", "yyyy-MM-dd'T'HH:mm:ss.SSS+08:00");
 
         DATE_PATTERN.add("\\d{4}-\\d{2}");
         DATE_FORMAT.put("\\d{4}-\\d{2}", "yyyy-MM");
@@ -68,6 +76,10 @@ public class DateUtil {
                     continue;
                 }
             }
+            d = Convert.convert(Date.class, dateStr);
+            if (!Objects.isNull(d)) {
+                return d;
+            }
             throw new RuntimeException("未找到匹配的时间格式,dateStr" + dateStr);
         }
         return str2Date(dateStr, format);
@@ -85,7 +97,11 @@ public class DateUtil {
                 continue;
             }
         }
-        throw new RuntimeException("未找到匹配的时间格式,dateStr" + dateStr);
+        d = Convert.convert(Date.class, dateStr);
+        if (!Objects.isNull(d)) {
+            return d;
+        }
+        throw new RuntimeException("未找到匹配的时间格式,dateStr:" + dateStr);
     }
 
     public static String date2Str(Date date, String pattern) {

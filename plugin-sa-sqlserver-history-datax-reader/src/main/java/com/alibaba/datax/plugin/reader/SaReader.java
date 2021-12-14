@@ -398,7 +398,13 @@ public class SaReader extends Reader {
             this.endTime = readerConfig.getString(KeyConstant.TASK_END_TIME,null);
             this.timePattern = readerConfig.getString(KeyConstant.DATE_PATTERN,null);
             this.timeFieldCount = readerConfig.getBool(KeyConstant.TIME_FIELD_COUNT,true);
-            this.sdf = new SimpleDateFormat(this.timePattern);
+            this.useRowNumber = readerConfig.getBool(KeyConstant.USE_ROW_NUMBER, true);
+            if(Objects.isNull(this.timePattern) && !this.useRowNumber){
+                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"useRowNumber为false时,timePattern是必填项，请检查！");
+            }
+            if(!Objects.isNull(this.timePattern)){
+                this.sdf = new SimpleDateFormat(this.timePattern);
+            }
             this.timeInterval = readerConfig.getLong(KeyConstant.TIME_INTERVAL,1000*60*60*24*1L);
             if(Objects.isNull(this.timeInterval) || this.timeInterval<=0){
                 this.timeInterval = 1000*60*60*24*1L;
@@ -428,7 +434,6 @@ public class SaReader extends Reader {
             this.sqlCount = readerConfig.getString(KeyConstant.SQL_COUNT_TEMPLATE);
             this.maxQueryNum = readerConfig.getLong(KeyConstant.MAX_QUERY_NUM,50000L);
             this.rowNumSql = readerConfig.getString(KeyConstant.ROW_NUM_SQL_TEMPLATE);
-            this.useRowNumber = readerConfig.getBool(KeyConstant.USE_ROW_NUMBER, true);
             this.sqlRowNum = readerConfig.getString(KeyConstant.SQL_ROW_NUM_TEMPLATE);
             this.pageSize = readerConfig.getLong(KeyConstant.PAGE_SIZE,200000);
             this.sqlColumnList = readerConfig.getList(KeyConstant.SQL_COLUMN,new ArrayList<>(),String.class);

@@ -1,17 +1,19 @@
 package com.alibaba.datax.plugin.util;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.StrUtil;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 
 public class DateUtil {
 
 
+    public static void main(String[] args) {
+        Date convert = Convert.convert(Date.class, "2021-01-01T12:12:23+08:00");
+        System.out.println(convert);
+    }
     private static Set<String> DATE_PATTERN = new HashSet<>();
     private static Map<String, String> DATE_FORMAT = new HashMap<>();
     private static Set<String> CUSTOMIZE_DATE_FORMAT = new LinkedHashSet<>();
@@ -26,8 +28,8 @@ public class DateUtil {
         DATE_PATTERN.add("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{1,3}");
         DATE_FORMAT.put("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{1,3}", "yyyy-MM-dd HH:mm:ss.SSS");
 
-        DATE_PATTERN.add("\\d{4}");
-        DATE_FORMAT.put("\\d{4}", "yyyy");
+        DATE_PATTERN.add("\\d{4}-\\d{2}-\\d{2}'T'\\d{2}:\\d{2}:\\d{2}.\\d{1,3}+08:00");
+        DATE_FORMAT.put("\\d{4}-\\d{2}-\\d{2}'T'\\d{2}:\\d{2}:\\d{2}.\\d{1,3}+08:00", "yyyy-MM-dd'T'HH:mm:ss.SSS+08:00");
 
         DATE_PATTERN.add("\\d{4}-\\d{2}");
         DATE_FORMAT.put("\\d{4}-\\d{2}", "yyyy-MM");
@@ -74,6 +76,10 @@ public class DateUtil {
                     continue;
                 }
             }
+            d = Convert.convert(Date.class, dateStr);
+            if (!Objects.isNull(d)) {
+                return d;
+            }
             throw new RuntimeException("未找到匹配的时间格式,dateStr" + dateStr);
         }
         return str2Date(dateStr, format);
@@ -91,7 +97,11 @@ public class DateUtil {
                 continue;
             }
         }
-        throw new RuntimeException("未找到匹配的时间格式,dateStr" + dateStr);
+        d = Convert.convert(Date.class, dateStr);
+        if (!Objects.isNull(d)) {
+            return d;
+        }
+        throw new RuntimeException("未找到匹配的时间格式,dateStr:" + dateStr);
     }
 
     public static String date2Str(Date date, String pattern) {
@@ -145,30 +155,6 @@ public class DateUtil {
     public static boolean hasFormat(String format) {
         Collection<String> values = DATE_FORMAT.values();
         return values.contains(format) || CUSTOMIZE_DATE_FORMAT.contains(format);
-    }
-
-    /**
-     * 将 java.util.Date / java.time.LocalDate / java.time.LocalDateTime / java.sql.Date / java.sql.Timestamp 时间类型转换为 java.util.Date类型，否则为null
-     * @param date java.util.Date / java.time.LocalDate / java.time.LocalDateTime / java.sql.Date / java.sql.Timestamp类型的时间
-     * @return java.util.Date类型的时间
-     */
-    public static Date toDate(Object date) {
-        Date d = null;
-        if(date instanceof Date || date instanceof java.sql.Timestamp){
-            d = (Date) date;
-        }else if(date instanceof LocalDate){
-            d = Date.from(((LocalDate)date).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
-        }else if(date instanceof LocalDateTime){
-            d = Date.from(((LocalDateTime)date).atZone(ZoneId.systemDefault()).toInstant());
-        }else if(date instanceof java.sql.Date){
-            d = new Date(((java.sql.Date)date).getTime());
-        }
-        if(Objects.isNull(d)){
-            try {
-                d = str2Date(date.toString());
-            }catch (Exception e){}
-        }
-        return d;
     }
 
 }

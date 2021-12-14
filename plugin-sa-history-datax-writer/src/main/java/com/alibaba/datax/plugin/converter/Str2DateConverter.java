@@ -1,5 +1,6 @@
 package com.alibaba.datax.plugin.converter;
 
+import cn.hutool.core.convert.Convert;
 import com.alibaba.datax.plugin.util.DateUtil;
 import com.alibaba.datax.plugin.util.NullUtil;
 import cn.hutool.core.util.StrUtil;
@@ -21,6 +22,10 @@ public class Str2DateConverter implements Converter {
         }
         if(value instanceof Date){
             return value;
+        }
+        Date d = Convert.convert(Date.class, value);
+        if (!Objects.isNull(d)) {
+            return d;
         }
         String pattern = null;
         try {

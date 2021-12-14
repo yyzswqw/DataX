@@ -159,8 +159,9 @@
 |                             null                             | StringColumn |   java.lang.String   |
 |                       java.lang.String                       | StringColumn |   java.lang.String   |
 |                  boolean/java.long.Boolean                   |  BoolColumn  |  java.lang.Boolean   |
-| byte/java.long.Byte/short/java.long.Short/int/java.long.Integer/long/java.long.Long |  LongColumn  | java.math.BigInteger |
+| byte/java.long.Byte/short/java.long.Short/int/java.long.Integer/long/java.long.Long/java.math.BigInteger |  LongColumn  | java.math.BigInteger |
 |        float/java.long.Float/double/java.long.Double         | DoubleColumn |   java.lang.String   |
+|                    上述除外的其他数字类型                    | DoubleColumn |   java.lang.String   |
 |                        java.util.Date                        |  DateColumn  |    java.util.Date    |
 |                     java.time.LocalDate                      |  DateColumn  |    java.util.Date    |
 |                   java.time.LocalDateTime                    |  DateColumn  |    java.util.Date    |

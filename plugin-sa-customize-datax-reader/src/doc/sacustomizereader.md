@@ -92,8 +92,9 @@
   |                             null                             | StringColumn |
   |                       java.lang.String                       | StringColumn |
   |                  boolean/java.long.Boolean                   |  BoolColumn  |
-  | byte/java.long.Byte/short/java.long.Short/int/java.long.Integer/long/java.long.Long |  LongColumn  |
+  | byte/java.long.Byte/short/java.long.Short/int/java.long.Integer/long/java.long.Long/java.math.BigInteger |  LongColumn  |
   |        float/java.long.Float/double/java.long.Double         | DoubleColumn |
+  |                    上述除外的其他数字类型                    | DoubleColumn |
   |                        java.util.Date                        |  DateColumn  |
   |                     java.time.LocalDate                      |  DateColumn  |
   |                   java.time.LocalDateTime                    |  DateColumn  |

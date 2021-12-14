@@ -9,6 +9,7 @@ import com.alibaba.datax.reader.ReaderErrorCode;
 import com.alibaba.datax.reader.util.TypeUtil;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -98,9 +99,14 @@ public abstract class CommonReader implements Serializable {
                     record.setColumn(index,new StringColumn((String) value));
                 }else if(TypeUtil.isPrimitive(value,Boolean.class)){
                     record.setColumn(index,new BoolColumn(Boolean.parseBoolean(value.toString()) ));
-                }else if(TypeUtil.isPrimitive(value,Byte.class) || TypeUtil.isPrimitive(value,Short.class) || TypeUtil.isPrimitive(value,Integer.class) || TypeUtil.isPrimitive(value,Long.class)){
+                }else if(TypeUtil.isPrimitive(value,Byte.class) || TypeUtil.isPrimitive(value,Short.class) ||
+                        TypeUtil.isPrimitive(value,Integer.class) || TypeUtil.isPrimitive(value,Long.class)){
                     record.setColumn(index,new LongColumn(Long.parseLong(value.toString())));
                 }else if(TypeUtil.isPrimitive(value,Float.class) || TypeUtil.isPrimitive(value,Double.class)){
+                    record.setColumn(index,new DoubleColumn(value.toString()));
+                }else if(value instanceof BigInteger){
+                    record.setColumn(index,new LongColumn((BigInteger)value));
+                }else if(value instanceof Number){
                     record.setColumn(index,new DoubleColumn(value.toString()));
                 }else if(value instanceof Date){
                     record.setColumn(index,new DateColumn( (Date)value) );

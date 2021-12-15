@@ -33,6 +33,7 @@ public class ItemSetUtil {
 //                    .addProperties(properties)
 //                    .build();
 //            sa.itemSet(addRecord);
+            sa.flush();
         } catch (Exception e) {
             log.info("item Exception: {}", e);
             e.printStackTrace();

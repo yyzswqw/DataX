@@ -20,7 +20,9 @@ public class EventUtil {
 
         String distinctId = String.valueOf(properties.get(eventDistinctIdCol));
         properties.remove(eventDistinctIdCol);
-
+        if(NullUtil.isNullOrBlank(distinctId)){
+            return;
+        }
         try {
             properties.remove(KeyConstant.EVENT_DISTINCT_ID_COL);
             properties.remove(KeyConstant.EVENT_IS_LOGIN_ID);
@@ -36,6 +38,7 @@ public class EventUtil {
     public static void process(SensorsAnalytics sa, Map<String, Object> properties, List<IdentityItem> identityList) {
         String eventEventName = (String) properties.get(KeyConstant.EVENT_EVENT_NAME);
         SensorsAnalyticsIdentity.Builder builder = SensorsAnalyticsIdentity.builder();
+        //记录空值数
         int count = 0;
         for (IdentityItem identityItem : identityList) {
             if(identityItem.isColumn()){
@@ -43,14 +46,12 @@ public class EventUtil {
                 if(!NullUtil.isNullOrBlank(value)){
                     builder.addIdentityProperty(identityItem.getIdName(),value.toString());
                 }else{
-                    //记录空值数
                     count++;
                 }
             }else{
                 if(!NullUtil.isNullOrBlank(identityItem.getColumn())){
                     builder.addIdentityProperty(identityItem.getIdName(),identityItem.getColumn());
                 }else{
-                    //记录空值数
                     count++;
                 }
             }

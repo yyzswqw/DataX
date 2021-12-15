@@ -1,5 +1,6 @@
 package com.alibaba.datax.plugin.util;
 
+import cn.hutool.core.convert.Convert;
 import com.alibaba.datax.plugin.domain.TableColumnMetaData;
 import lombok.extern.slf4j.Slf4j;
 
@@ -119,14 +120,14 @@ public class ColumnDataUtil {
             return Boolean.parseBoolean(value.toString())+"";
         }
         if("timestamp".equalsIgnoreCase(type) || "datetime".equalsIgnoreCase(type)){
-            Date d = DateUtil.toDate(value);
+            Date d = Convert.convert(Date.class, value);
             if(Objects.isNull(d)){
                 return "\"" + value.toString() + "\"";
             }
             return "\"" + DateUtil.date2Str(d) + "\"";
         }
         if("date".equalsIgnoreCase(type)){
-            Date d = DateUtil.toDate(value);
+            Date d = Convert.convert(Date.class, value);
             if(Objects.isNull(d)){
                 return "\"" + value.toString() + "\"";
             }

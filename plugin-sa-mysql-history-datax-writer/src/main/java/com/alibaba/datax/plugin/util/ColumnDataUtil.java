@@ -1,5 +1,6 @@
 package com.alibaba.datax.plugin.util;
 
+import cn.hutool.core.convert.Convert;
 import com.alibaba.datax.plugin.domain.TableColumnMetaData;
 import lombok.extern.slf4j.Slf4j;
 
@@ -140,13 +141,13 @@ public class ColumnDataUtil {
                 return value.toString();
             case Types.TIMESTAMP:
 //                datetime or timestamp
-                Date d = DateUtil.toDate(value);
+                Date d = Convert.convert(Date.class, value);
                 if(Objects.isNull(d)){
                     return "\"" + value.toString() + "\"";
                 }
                 return "\"" + DateUtil.date2Str(d) + "\"";
             case Types.DATE:
-                Date d1 = DateUtil.toDate(value);
+                Date d1 = Convert.convert(Date.class, value);
                 if(Objects.isNull(d1)){
                     return "\"" + value.toString() + "\"";
                 }
@@ -155,7 +156,7 @@ public class ColumnDataUtil {
                 }
                 return "\"" + DateUtil.date2Str(d1,"yyyy-MM-dd") + "\"";
             case Types.TIME:
-                Date d2 = DateUtil.toDate(value);
+                Date d2 = Convert.convert(Date.class, value);
                 if(Objects.isNull(d2)){
                     return "\"" + value.toString() + "\"";
                 }

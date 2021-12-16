@@ -53,7 +53,7 @@
             "typeIsColumn": false
         },
         "identity": [
-            {"idName": "","column":"","isColumn":true}
+            {"idName": "","columnName":"","column":true,"distinctId": true}
         ],
         "plugin": [
             {

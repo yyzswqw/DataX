@@ -90,10 +90,10 @@ public class SaWriter extends Writer {
                         throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:track并且使用IDM3时，identity属性不能为空.");
                     }
                     for (IdentityItem identityItem : identityList) {
-                        if(NullUtil.isNullOrBlank(identityItem.getIdName()) || NullUtil.isNullOrBlank(identityItem.getColumn()) || NullUtil.isNullOrBlank(identityItem.isColumn())){
+                        if(NullUtil.isNullOrBlank(identityItem.getIdName()) || NullUtil.isNullOrBlank(identityItem.getColumnName()) || NullUtil.isNullOrBlank(identityItem.isColumn())){
                             throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:track并且使用IDM3时，identity属性配置错误.");
                         }
-                        if(identityItem.isColumn() && !saColumnNameList.contains(identityItem.getColumn())){
+                        if(identityItem.isColumn() && !saColumnNameList.contains(identityItem.getColumnName())){
                             throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:track并且使用IDM3时，identity属性:["+identityItem.getIdName()+"]为列属性时，应该在column中有对应配置列");
                         }
                     }

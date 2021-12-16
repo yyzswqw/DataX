@@ -124,7 +124,7 @@
                         "type": "item",
                         "useIDM3": false,
                         "identity": [
-                            {"idName": "id","column":"id1","isColumn":true}
+                            {"idName": "id","columnName":"id1","column":true,"distinctId": true}
                         ],
                         "user": {
                             "distinctIdColumn": "id1",
@@ -158,9 +158,11 @@
 
 ​		`identity.idName`：导入到神策系统的用户标识的名称。
 
-​		`identity.column`：导入到神策系统的对应用户标识的值，如果为常量则`identity.isColumn`应配置为false。
+​		`identity.columnName`：导入到神策系统的对应用户标识的值，如果为常量则`identity.column`应配置为false。
 
-​		`identity.isColumn`：导入到神策系统的用户标识的取值是否在`column`中动态获取的值，默认值true,若为常量，这应该配置为false。
+​		`identity.column`：导入到神策系统的用户标识的取值是否在`column`中动态获取的值，默认值true,若为常量，这应该配置为false。
+
+​		`identity.distinctId`：`identity.columnName`配置的列是否需要加入到事件属性中，不加入则值会参与到ID Mapping过程中，默认值false。
 
 ​		`column`：导入神策分析的属性列表。
 

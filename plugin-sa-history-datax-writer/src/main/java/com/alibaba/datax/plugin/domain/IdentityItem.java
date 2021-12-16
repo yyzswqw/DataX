@@ -8,9 +8,11 @@ public class IdentityItem implements Serializable {
 
     private String idName;
 
-    private String column;
+    private String columnName;
 
-    private boolean isColumn = true;
+    private boolean column = true;
+
+    private boolean distinctId = false;
 
     public String getIdName() {
         return idName;
@@ -20,20 +22,27 @@ public class IdentityItem implements Serializable {
         this.idName = idName;
     }
 
-    public String getColumn() {
-        return column;
+    public String getColumnName() {
+        return columnName;
     }
 
-    public void setColumn(String column) {
-        this.column = column;
+    public void setColumnName(String columnName) {
+        this.columnName = columnName;
     }
 
     public boolean isColumn() {
-        return isColumn;
+        return column;
     }
 
     public void setColumn(boolean column) {
-        isColumn = column;
+        this.column = column;
     }
 
+    public boolean isDistinctId() {
+        return distinctId;
+    }
+
+    public void setDistinctId(boolean distinctId) {
+        this.distinctId = distinctId;
+    }
 }

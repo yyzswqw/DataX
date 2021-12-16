@@ -40,24 +40,28 @@ public class ProfileUtil {
         int count = 0;
         for (IdentityItem identityItem : identityList) {
             if(identityItem.isColumn()){
-                Object value = properties.getOrDefault(identityItem.getColumn(), null);
+                Object value = properties.getOrDefault(identityItem.getColumnName(), null);
                 if(!NullUtil.isNullOrBlank(value)){
                     builder.addIdentityProperty(identityItem.getIdName(),value.toString());
                 }else{
                     count++;
                 }
             }else{
-                if(!NullUtil.isNullOrBlank(identityItem.getColumn())){
-                    builder.addIdentityProperty(identityItem.getIdName(),identityItem.getColumn());
+                if(!NullUtil.isNullOrBlank(identityItem.getColumnName())){
+                    builder.addIdentityProperty(identityItem.getIdName(),identityItem.getColumnName());
                 }else{
                     count++;
                 }
             }
         }
-        identityList.forEach(i->properties.remove(i.getColumn()));
+        identityList.forEach(i->{
+            if(i.isDistinctId()){
+                properties.remove(i.getColumnName());
+            }
+        });
         SensorsAnalyticsIdentity identity = builder.build();
         Map<String, String> identityMap = identity.getIdentityMap();
-        if(Objects.isNull(identityMap) || identityMap.isEmpty() || identityList.size() == count){
+        if(identityList.size() == count){
             return;
         }
         try {

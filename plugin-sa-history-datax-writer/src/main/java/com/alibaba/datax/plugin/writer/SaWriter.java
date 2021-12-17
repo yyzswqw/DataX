@@ -3,15 +3,13 @@ package com.alibaba.datax.plugin.writer;
 import com.alibaba.datax.BasePlugin;
 import com.alibaba.datax.plugin.domain.IdentityItem;
 import com.alibaba.datax.plugin.domain.SaPlugin;
-import com.alibaba.datax.plugin.util.ConverterUtil;
-import com.alibaba.datax.plugin.util.SaUtil;
+import com.alibaba.datax.plugin.util.*;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.datax.plugin.ConverterFactory;
 import com.alibaba.datax.plugin.KeyConstant;
 import com.alibaba.datax.plugin.classloader.PluginClassLoader;
 import com.alibaba.datax.plugin.domain.DataConverter;
 import com.alibaba.datax.plugin.domain.SaColumnItem;
-import com.alibaba.datax.plugin.util.NullUtil;
 import com.alibaba.datax.common.element.*;
 import com.alibaba.datax.common.exception.CommonErrorCode;
 import com.alibaba.datax.common.exception.DataXException;
@@ -131,6 +129,7 @@ public class SaWriter extends Writer {
         }
     }
 
+    @Slf4j
     public static class Task extends Writer.Task{
 
         private static SensorsAnalytics sa ;
@@ -260,6 +259,24 @@ public class SaWriter extends Writer {
                     SaUtil.process(sa,type,properties,identityList,this.isUnBind);
                 }
 
+            }
+            if(this.useIDM3){
+                if(KeyConstant.TRACK.equalsIgnoreCase(type)){
+                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{}", EventUtil.IDENTITY_FILTER_COUNT.longValue(),EventUtil.IDENTITY_COUNT.longValue());
+                }else if(KeyConstant.USER.equalsIgnoreCase(type)){
+                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{}", ProfileUtil.IDENTITY_FILTER_COUNT.longValue(),ProfileUtil.IDENTITY_COUNT.longValue());
+                }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
+                    log.info("ITEM send SA count:{}", ItemSetUtil.SEND_SA_COUNT.longValue());
+                }
+
+            }else{
+                if(KeyConstant.TRACK.equalsIgnoreCase(type)){
+                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{}",EventUtil.DISTINCT_ID_FILTER_COUNT.longValue(),EventUtil.DISTINCT_ID_COUNT.longValue());
+                }else if(KeyConstant.USER.equalsIgnoreCase(type)){
+                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{}", ProfileUtil.DISTINCT_ID_FILTER_COUNT.longValue(),ProfileUtil.DISTINCT_ID_COUNT.longValue());
+                }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
+                    log.info("ITEM send SA count:{}", ItemSetUtil.SEND_SA_COUNT.longValue());
+                }
             }
         }
 

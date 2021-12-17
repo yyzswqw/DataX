@@ -8,9 +8,15 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.LongAdder;
 
 @Slf4j
 public class EventUtil {
+
+    public static LongAdder  IDENTITY_FILTER_COUNT = new LongAdder();
+    public static LongAdder  IDENTITY_COUNT = new LongAdder();
+    public static LongAdder  DISTINCT_ID_FILTER_COUNT = new LongAdder();
+    public static LongAdder  DISTINCT_ID_COUNT = new LongAdder();
 
     public static void process(SensorsAnalytics sa, Map<String, Object> properties) {
         String eventDistinctIdCol = (String) properties.get(KeyConstant.EVENT_DISTINCT_ID_COL);
@@ -20,6 +26,7 @@ public class EventUtil {
         String distinctId = String.valueOf(properties.get(eventDistinctIdCol));
         properties.remove(eventDistinctIdCol);
         if(NullUtil.isNullOrBlank(distinctId)){
+            DISTINCT_ID_FILTER_COUNT.increment();
             return;
         }
         try {
@@ -28,6 +35,7 @@ public class EventUtil {
             properties.remove(KeyConstant.EVENT_EVENT_NAME);
             sa.track(distinctId, eventIsLoginId, eventEventName, properties);
             sa.flush();
+            DISTINCT_ID_COUNT.increment();
         } catch (Exception e) {
             log.error("Event Exception: {}", e);
             e.printStackTrace();
@@ -63,6 +71,7 @@ public class EventUtil {
         SensorsAnalyticsIdentity identity = builder.build();
         Map<String, String> identityMap = identity.getIdentityMap();
         if(identityList.size() == count){
+            IDENTITY_FILTER_COUNT.increment();
             return;
         }
         try {
@@ -71,6 +80,7 @@ public class EventUtil {
             properties.remove(KeyConstant.EVENT_EVENT_NAME);
             sa.trackById(identity,eventEventName, properties);
             sa.flush();
+            IDENTITY_COUNT.increment();
         } catch (Exception e) {
             log.error("Event Exception: {}", e);
             e.printStackTrace();

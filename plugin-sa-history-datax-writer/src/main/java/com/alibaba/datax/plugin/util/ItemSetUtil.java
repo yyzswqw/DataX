@@ -6,9 +6,12 @@ import com.sensorsdata.analytics.javasdk.exceptions.InvalidArgumentException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.concurrent.atomic.LongAdder;
 
 @Slf4j
 public class ItemSetUtil {
+
+    public static LongAdder SEND_SA_COUNT = new LongAdder();
 
     public static void process(SensorsAnalytics sa, Map<String, Object> properties) {
         String itemItemType = (String) properties.get(KeyConstant.ITEM_ITEM_TYPE);
@@ -34,6 +37,7 @@ public class ItemSetUtil {
 //                    .build();
 //            sa.itemSet(addRecord);
             sa.flush();
+            SEND_SA_COUNT.increment();
         } catch (Exception e) {
             log.info("item Exception: {}", e);
             e.printStackTrace();

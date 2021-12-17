@@ -9,9 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.LongAdder;
 
 @Slf4j
 public class ProfileUtil {
+
+    public static LongAdder IDENTITY_FILTER_COUNT = new LongAdder();
+    public static LongAdder  IDENTITY_COUNT = new LongAdder();
+    public static LongAdder  DISTINCT_ID_FILTER_COUNT = new LongAdder();
+    public static LongAdder  DISTINCT_ID_COUNT = new LongAdder();
 
     public static void process(SensorsAnalytics sa, Map<String, Object> properties) {
         String userDistinctId = (String) properties.get(KeyConstant.USER_DISTINCT_ID);
@@ -23,11 +29,13 @@ public class ProfileUtil {
         properties.remove(KeyConstant.USER_DISTINCT_ID);
         properties.remove(KeyConstant.user_is_login_id);
         if(NullUtil.isNullOrBlank(distinctId)){
+            DISTINCT_ID_FILTER_COUNT.increment();
             return;
         }
         try {
             sa.profileSet(distinctId, userIsLoginId, properties);
             sa.flush();
+            DISTINCT_ID_COUNT.increment();
         } catch (Exception e) {
             log.error("user Profile Exception: {}", e);
             e.printStackTrace();
@@ -62,6 +70,7 @@ public class ProfileUtil {
         SensorsAnalyticsIdentity identity = builder.build();
         Map<String, String> identityMap = identity.getIdentityMap();
         if(identityList.size() == count){
+            IDENTITY_FILTER_COUNT.increment();
             return;
         }
         try {
@@ -71,6 +80,7 @@ public class ProfileUtil {
                 sa.profileSetById(identity, properties);
             }
             sa.flush();
+            IDENTITY_COUNT.increment();
         } catch (Exception e) {
             log.error("user Profile Exception: {}", e);
             e.printStackTrace();

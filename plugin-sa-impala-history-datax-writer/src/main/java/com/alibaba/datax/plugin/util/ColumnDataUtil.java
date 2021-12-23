@@ -109,7 +109,7 @@ public class ColumnDataUtil {
         }
         String type = tableColumnMetaData.getType();
         if("string".equalsIgnoreCase(type) || "varchar".equalsIgnoreCase(type) || "char".equalsIgnoreCase(type)){
-            return "'" + value.toString().replaceAll("'", "\'") + "'";
+            return "'" + value.toString().replaceAll("'", "\\\\'") + "'";
         }
         if("int".equalsIgnoreCase(type) || "bigint".equalsIgnoreCase(type) || "float".equalsIgnoreCase(type)
           || "integer".equalsIgnoreCase(type) || "double".equalsIgnoreCase(type) || "decimal".equalsIgnoreCase(type)
@@ -122,19 +122,19 @@ public class ColumnDataUtil {
         if("timestamp".equalsIgnoreCase(type) || "datetime".equalsIgnoreCase(type)){
             Date d = Convert.convert(Date.class, value);
             if(Objects.isNull(d)){
-                return "'" + value.toString().replaceAll("'", "\'") + "'";
+                return "'" + value.toString().replaceAll("'", "\\\\'") + "'";
             }
             return "'" + DateUtil.date2Str(d) + "'";
         }
         if("date".equalsIgnoreCase(type)){
             Date d = Convert.convert(Date.class, value);
             if(Objects.isNull(d)){
-                return "'" + value.toString().replaceAll("'", "\'") + "'";
+                return "'" + value.toString().replaceAll("'", "\\\\'") + "'";
             }
             return "'" + DateUtil.date2Str(d,"yyyy-MM-dd") + "'";
         }
         log.info("暂不支持的数据类型，impala type:{},value:{},value type:{}",type,value,Objects.isNull(value)?"null":value.getClass());
-        return "'" + value.toString().replaceAll("'", "\'") + "'";
+        return "'" + value.toString().replaceAll("'", "\\\\'") + "'";
     }
 
 }

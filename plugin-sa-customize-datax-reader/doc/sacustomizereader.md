@@ -67,7 +67,7 @@
 
   ```xml
   <dependency>
-      <groupId>com.alibaba</groupId>
+      <groupId>com.alibaba.datax</groupId>
       <artifactId>plugin-sa-history-datax-reader-common-plugin</artifactId>
       <version>1.0-SNAPSHOT</version>
   </dependency>

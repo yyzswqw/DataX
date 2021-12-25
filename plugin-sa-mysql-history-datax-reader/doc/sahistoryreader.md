@@ -199,7 +199,7 @@
 
   ```xml
   <dependency>
-      <groupId>com.alibaba</groupId>
+      <groupId>com.alibaba.datax</groupId>
       <artifactId>plugin-sa-history-datax-writer-common-plugin</artifactId>
       <version>1.0-SNAPSHOT</version>
   </dependency>
@@ -208,6 +208,8 @@
 - 编写代码
 
   继承com.alibaba.BasePlugin类，重写instance方法（配置文件中plugin.param的配置项会被传递到该方法中），以及定义内部类继承com.alibaba.BasePlugin的内部类BasePlugin.SAPlugin，重写process方法，当前行的数据将以java.util.Map传递。
+
+  ​	特别地，若使用时间过滤方式查询时，map中对应key为：``$$startTime$$``和``$$endTime$$``的值分别对应着``table``配置项中的表当前行数据是在这两个时间段的数据，为`string`类型，格式为``datePattern``配置项的格式，这两个时间不一定是``startTime``、``endTime``配置的值，因为当数据量很大时，会进行时间段的拆分。
 
 - 部署插件
 

@@ -598,9 +598,15 @@ public class SaReader extends Reader {
             }
         }
 
-        private List<Record> buildRecord(List<Record> recordCollector,RecordSender recordSender, Map<String, Object> item){
+        private List<Record> buildRecord(List<Record> recordCollector,RecordSender recordSender, Map<String, Object> item,String startTime,String endTime){
             if(Objects.isNull(item) || item.isEmpty()){
                 return recordCollector;
+            }
+            if(StrUtil.isNotBlank(startTime)){
+                item.put("$$startTime$$",startTime);
+            }
+            if(StrUtil.isNotBlank(endTime)){
+                item.put("$$endTime$$",endTime);
             }
             if(!Objects.isNull(this.basePluginList)){
                 doPlugin(recordCollector, recordSender,item, 0, this.basePluginList.size());
@@ -714,7 +720,7 @@ public class SaReader extends Reader {
                 size += values.size();
                 values.forEach(value -> {
                     List<Record> vals = new ArrayList<>();
-                    this.buildRecord(vals,recordSender, value);
+                    this.buildRecord(vals,recordSender, value,null,null);
                     if(!vals.isEmpty()){
                         vals.forEach(v-> {
                             if(!Objects.isNull(v)){
@@ -809,7 +815,7 @@ public class SaReader extends Reader {
                 size += values.size();
                 values.forEach(value -> {
                     List<Record> vals = new ArrayList<>();
-                    this.buildRecord(vals,recordSender, value);
+                    this.buildRecord(vals,recordSender, value,startTime,endTime);
                     if(!vals.isEmpty()){
                         vals.forEach(v-> {
                             if(!Objects.isNull(v)){
@@ -949,9 +955,10 @@ public class SaReader extends Reader {
                                     for (Map<String, Object> item : data) {
                                         List<Map<String, Object>> values = addSqlColumns(item);
                                         size += values.size();
-                                        values.forEach(value -> {
+                                        for (int i = 0; i < values.size(); i++) {
+                                            Map<String, Object> value = values.get(i);
                                             List<Record> vals = new ArrayList<>();
-                                            this.buildRecord(vals,recordSender, value);
+                                            this.buildRecord(vals,recordSender, value,t.getStartTime(), t.getEndTime());
                                             if(!vals.isEmpty()){
                                                 vals.forEach(v-> {
                                                     if(!Objects.isNull(v)){
@@ -960,7 +967,7 @@ public class SaReader extends Reader {
                                                 });
                                             }
                                             vals = null;
-                                        });
+                                        }
                                     }
                                     finallyCount.addAndGet(size);
                                     data.clear();
@@ -998,9 +1005,10 @@ public class SaReader extends Reader {
                             for (Map<String, Object> item : data) {
                                 List<Map<String, Object>> values = addSqlColumns(item);
                                 size += values.size();
-                                values.forEach(value -> {
+                                for (int i = 0; i < values.size(); i++) {
+                                    Map<String, Object> value = values.get(i);
                                     List<Record> vals = new ArrayList<>();
-                                    this.buildRecord(vals,recordSender, value);
+                                    this.buildRecord(vals,recordSender, value,t.getStartTime(), t.getEndTime());
                                     if(!vals.isEmpty()){
                                         vals.forEach(v-> {
                                             if(!Objects.isNull(v)){
@@ -1009,7 +1017,7 @@ public class SaReader extends Reader {
                                         });
                                     }
                                     vals = null;
-                                });
+                                }
                             }
                             finallyCount.addAndGet(size);
                             data.clear();
@@ -1036,7 +1044,7 @@ public class SaReader extends Reader {
                     size += values.size();
                     values.forEach(value -> {
                         List<Record> vals = new ArrayList<>();
-                        this.buildRecord(vals,recordSender, value);
+                        this.buildRecord(vals,recordSender, value, startTime, endTime);
                         if(!vals.isEmpty()){
                             vals.forEach(v-> {
                                 if(!Objects.isNull(v)){

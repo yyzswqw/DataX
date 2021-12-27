@@ -266,7 +266,7 @@ public class SaWriter extends Writer {
                 }else if(KeyConstant.USER.equalsIgnoreCase(type)){
                     log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{}", ProfileUtil.IDENTITY_FILTER_COUNT.longValue(),ProfileUtil.IDENTITY_COUNT.longValue());
                 }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
-                    log.info("ITEM send SA count:{}", ItemSetUtil.SEND_SA_COUNT.longValue());
+                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{}",ItemSetUtil.FILTER_COUNT.longValue(), ItemSetUtil.SEND_SA_COUNT.longValue());
                 }
 
             }else{
@@ -275,7 +275,7 @@ public class SaWriter extends Writer {
                 }else if(KeyConstant.USER.equalsIgnoreCase(type)){
                     log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{}", ProfileUtil.DISTINCT_ID_FILTER_COUNT.longValue(),ProfileUtil.DISTINCT_ID_COUNT.longValue());
                 }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
-                    log.info("ITEM send SA count:{}", ItemSetUtil.SEND_SA_COUNT.longValue());
+                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{}",ItemSetUtil.FILTER_COUNT.longValue(), ItemSetUtil.SEND_SA_COUNT.longValue());
                 }
             }
         }

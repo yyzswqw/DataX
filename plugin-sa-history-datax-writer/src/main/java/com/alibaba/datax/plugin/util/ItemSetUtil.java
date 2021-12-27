@@ -1,8 +1,8 @@
 package com.alibaba.datax.plugin.util;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.datax.plugin.KeyConstant;
 import com.sensorsdata.analytics.javasdk.SensorsAnalytics;
-import com.sensorsdata.analytics.javasdk.exceptions.InvalidArgumentException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.LongAdder;
 public class ItemSetUtil {
 
     public static LongAdder SEND_SA_COUNT = new LongAdder();
+    public static LongAdder  FILTER_COUNT = new LongAdder();
 
     public static void process(SensorsAnalytics sa, Map<String, Object> properties) {
         String itemItemType = (String) properties.get(KeyConstant.ITEM_ITEM_TYPE);
@@ -28,6 +29,10 @@ public class ItemSetUtil {
             properties.remove(typeTmp);
         }
         properties.remove(itemItemIdColumn);
+        if(StrUtil.isEmpty(itemItemType) || StrUtil.isEmpty(itemId)){
+            FILTER_COUNT.increment();
+            return;
+        }
 
         try {
             sa.itemSet(itemItemType,itemId,properties);

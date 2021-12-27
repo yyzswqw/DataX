@@ -126,7 +126,7 @@ public class ColumnDataUtil {
             case Types.VARBINARY:
             case Types.BLOB:
             case Types.LONGVARBINARY:
-                return "'" + value.toString().replaceAll("'", "\\\\'").replaceAll("\\\\", "\\\\\\\\") + "'";
+                return "'" + value.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'";
             case Types.SMALLINT:
             case Types.INTEGER:
             case Types.BIGINT:
@@ -143,13 +143,13 @@ public class ColumnDataUtil {
 //                datetime or timestamp
                 Date d = Convert.convert(Date.class, value);
                 if(Objects.isNull(d)){
-                    return "'" + value.toString().replaceAll("'", "\\\\'").replaceAll("\\\\", "\\\\\\\\") + "'";
+                    return "'" + value.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'";
                 }
                 return "'" + DateUtil.date2Str(d) + "'";
             case Types.DATE:
                 Date d1 = Convert.convert(Date.class, value);
                 if(Objects.isNull(d1)){
-                    return "'" + value.toString().replaceAll("'", "\\\\'").replaceAll("\\\\", "\\\\\\\\") + "'";
+                    return "'" + value.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'";
                 }
                 if("year".equalsIgnoreCase(tableColumnMetaData.getTypeName())){
                     return "'" + DateUtil.date2Str(d1,"yyyy") + "'";
@@ -158,13 +158,13 @@ public class ColumnDataUtil {
             case Types.TIME:
                 Date d2 = Convert.convert(Date.class, value);
                 if(Objects.isNull(d2)){
-                    return "'" + value.toString().replaceAll("'", "\\\\'").replaceAll("\\\\", "\\\\\\\\") + "'";
+                    return "'" + value.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'";
                 }
                 return "'" + DateUtil.date2Str(d2,"HH:mm:ss") + "'";
 
         }
         log.info("暂不支持的数据类型，mysql type:{},value:{},value type:{}",tableColumnMetaData.getTypeName(),value,Objects.isNull(value)?"null":value.getClass());
-        return "'" + value.toString().replaceAll("'", "\\\\'").replaceAll("\\\\", "\\\\\\\\") + "'";
+        return "'" + value.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'";
     }
 
 

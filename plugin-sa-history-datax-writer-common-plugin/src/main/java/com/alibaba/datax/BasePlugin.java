@@ -10,6 +10,25 @@ public abstract class BasePlugin implements Serializable {
     public abstract static class SAPlugin{
 
         /**
+         * 是否支持批量。返回true,则调用process(List<Map<String,Object>> properties)方法，否则调用public boolean process(Map<String,Object> properties)方法
+         * 是否可用该方法，需要对应具体插件的支持。
+         * @return
+         */
+        public boolean isMulti(){
+            return false;
+        }
+
+        /**
+         * 自定义批量处理逻辑
+         * 是否可用该方法，需要对应具体插件的支持。
+         * @param properties 批量数据
+         * @return 是否继续执行后续逻辑
+         */
+        public boolean process(List<Map<String,Object>> properties){
+            return true;
+        }
+
+        /**
          * 自定义处理逻辑
          * @param properties 当前行数据
          * @return 是否继续执行后续逻辑
@@ -39,6 +58,7 @@ public abstract class BasePlugin implements Serializable {
         }
 
         /**
+         * 该方法应该运用在读插件上，而不是写插件上，写插件不支持该方法(若对应写插件有支持该方法则除外)
          * 将多个多行Map合并到一个Map中，Map中的结构为{"__$$is_multi_column$$__":"true","data":List}，List中为合并后没每条数据
          * 注意，需要对应插件支持多行模式
          * 如果props参数中的某一个list是多个，properties中的主数据将会分裂

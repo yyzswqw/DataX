@@ -12,7 +12,7 @@
 
   ```xml
   <dependency>
-      <groupId>com.alibaba</groupId>
+      <groupId>com.alibaba.datax</groupId>
       <artifactId>plugin-sa-history-datax-writer-common-plugin</artifactId>
       <version>1.0-SNAPSHOT</version>
   </dependency>
@@ -21,6 +21,9 @@
 - 编写代码
 
   继承com.alibaba.BasePlugin类，重写instance方法（配置文件中plugin.param的配置项会被传递到该方法中），以及定义内部类继承com.alibaba.BasePlugin的内部类BasePlugin.SAPlugin，重写process方法。
+  ``public boolean isMulti()``方法：是否支持批量。返回true,则需要重写``public boolean process(List<Map<String,Object>> properties)``方法，将调用``public boolean process(List<Map<String,Object>> properties)``方法，否则调用``public boolean process(Map<String,Object> properties)``方法。是否可用该方法，需要对应具体插件的支持。
+  ``public boolean process(List<Map<String,Object>> properties)``方法：``isMulti``方法返回``true``时，需要重写此方法，发送数据到插件时，将调用该方法，是否可用该方法，需要对应具体插件的支持。
+  ``public boolean process(Map<String,Object> properties)``方法：``isMulti``方法返回``false``时(默认返回``false``),将调用该方法。所有插件都将支持该方法。
 
 - 部署插件
 

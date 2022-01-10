@@ -497,6 +497,7 @@ public class SaMysqlReader extends Reader {
         }
 
         /**
+         * 过时，已使用doPlugin(List<Record> recordCollector,RecordSender recordSender,List<Map<String, Object>> values,int pluginStart,int pluginEnd)替换
          * 只执行单行数据的插件，如果是多行，内部会交给子节点执行，子节点最终执行单行数据时还是会调用该方法
          * @param recordCollector
          * @param recordSender
@@ -504,6 +505,7 @@ public class SaMysqlReader extends Reader {
          * @param pluginStart
          * @param pluginEnd
          */
+        @Deprecated
         private void doPlugin(List<Record> recordCollector,RecordSender recordSender,Map<String, Object> values,int pluginStart,int pluginEnd){
             if(Objects.isNull(this.basePluginList)){
                 return ;
@@ -530,10 +532,10 @@ public class SaMysqlReader extends Reader {
                     return;
                 }
             }
-
         }
 
         /**
+         * 过时，已使用doPlugin(List<Record> recordCollector,RecordSender recordSender,List<Map<String, Object>> values,int pluginStart,int pluginEnd)替换
          * 子节点执行多行数据的插件，内部单行数据的执行还是交给doPlugin执行
          * @param recordCollector
          * @param recordSender
@@ -541,6 +543,7 @@ public class SaMysqlReader extends Reader {
          * @param pluginStart
          * @param pluginEnd
          */
+        @Deprecated
         private void doPluginSub(List<Record> recordCollector, RecordSender recordSender, Map<String, Object> values, int pluginStart, int pluginEnd) {
             if(Objects.isNull(this.basePluginList)){
                 return ;
@@ -590,6 +593,70 @@ public class SaMysqlReader extends Reader {
             }
         }
 
+        /**
+         *批量执行插件
+         * @param recordCollector 数据收集器
+         * @param recordSender 数据发送器
+         * @param values 批量待处理出具
+         * @param pluginStart 插件开始下标
+         * @param pluginEnd 插件结束下标
+         */
+        private void doPlugin(List<Record> recordCollector,RecordSender recordSender,List<Map<String, Object>> values,int pluginStart,int pluginEnd){
+            if(Objects.isNull(this.basePluginList)){
+                return ;
+            }
+            if((pluginStart < pluginEnd) && pluginStart < this.basePluginList.size() && pluginStart >=0){
+                BasePlugin.SAPlugin saPlugin = this.basePluginList.get(pluginStart);
+                if(saPlugin.isMulti()){
+                    boolean process = saPlugin.process(values);
+                    if(!process){
+                        return;
+                    }
+                    //交给下个插件节点执行
+                    doPlugin(recordCollector,recordSender,values,pluginStart+1,pluginEnd);
+                }else{
+                    List<Map<String, Object>> data = new ArrayList<>();
+                    for (Map<String, Object> value : values) {
+                        boolean process = saPlugin.process(value);
+                        if(!process){
+                            break;
+                        }
+                        //当前插件执行完后数据变成了多行
+                        Object isMultiColumnObj = value.getOrDefault("__$$is_multi_column$$__", false);
+                        boolean isMultiColumn = Boolean.parseBoolean(isMultiColumnObj.toString());
+                        if(isMultiColumn) {
+                            data.addAll((List<Map<String, Object>>)value.get("data"));
+                        }else{
+                            data.add(value);
+                        }
+                    }
+                    values = null;
+                    //交给下个插件节点执行
+                    doPlugin(recordCollector,recordSender,data,pluginStart+1,pluginEnd);
+                }
+            }
+            if(pluginStart >= pluginEnd){
+                // 所有插件都执行完了，收集Record
+                for (Map<String, Object> value : values) {
+                    Record record = recordSender.createRecord();
+                    doBuildRecord(record,value);
+                    recordCollector.add(record);
+                }
+            }
+        }
+
+
+        /**
+         * 过时，已使用buildRecord(List<Record> recordCollector,RecordSender recordSender, List<Map<String, Object>> itemValues,String startTime,String endTime)替换
+         *
+         * @param recordCollector 数据收集器
+         * @param recordSender 数据发送器
+         * @param item 当前行数据
+         * @param startTime 当前行数据主表查询的开始时间
+         * @param endTime 当前行数据主表查询的结束时间
+         * @return
+         */
+        @Deprecated
         private List<Record> buildRecord(List<Record> recordCollector,RecordSender recordSender, Map<String, Object> item,String startTime,String endTime){
             if(Objects.isNull(item) || item.isEmpty()){
                 return recordCollector;
@@ -613,6 +680,39 @@ public class SaMysqlReader extends Reader {
                 Record record = recordSender.createRecord();
                 doBuildRecord(record,item);
                 recordCollector.add(record);
+            }
+            return recordCollector;
+        }
+
+        /**
+         * 批量执行插件并构建Record
+         * @param recordCollector 数据收集器
+         * @param recordSender 数据发送器
+         * @param itemValues 批量待处理出具
+         * @param startTime 这一批数据主表查询的开始时间
+         * @param endTime 这一批数据主表查询的结束时间
+         * @return
+         */
+        private List<Record> buildRecord(List<Record> recordCollector,RecordSender recordSender, List<Map<String, Object>> itemValues,String startTime,String endTime){
+            if(Objects.isNull(itemValues) || itemValues.isEmpty()){
+                return recordCollector;
+            }
+            itemValues.forEach(item -> {
+                if(StrUtil.isNotBlank(startTime)){
+                    item.put("$$startTime$$",startTime);
+                }
+                if(StrUtil.isNotBlank(endTime)){
+                    item.put("$$endTime$$",endTime);
+                }
+            });
+            if(!Objects.isNull(this.basePluginList)){
+                doPlugin(recordCollector, recordSender,itemValues, 0, this.basePluginList.size());
+            }else{
+                itemValues.forEach(item -> {
+                    Record record = recordSender.createRecord();
+                    doBuildRecord(record,item);
+                    recordCollector.add(record);
+                });
             }
             return recordCollector;
         }
@@ -707,22 +807,22 @@ public class SaMysqlReader extends Reader {
                 return 0;
             }
             long size = 0;
+            List<Map<String, Object>> valueList = new ArrayList<>();
             for (Map<String, Object> item : data) {
-                List<Map<String, Object>> values = addSqlColumns(item);
-                size += values.size();
-                values.forEach(value -> {
-                    List<Record> vals = new ArrayList<>();
-                    this.buildRecord(vals,recordSender, value,null,null);
-                    if(!vals.isEmpty()){
-                        vals.forEach(v-> {
-                            if(!Objects.isNull(v)){
-                                recordSender.sendToWriter(v);
-                            }
-                        });
+                valueList.addAll(addSqlColumns(item));
+            }
+            data.clear();
+            List<Record> vals = new ArrayList<>();
+            this.buildRecord(vals,recordSender, valueList,null,null);
+            if(!vals.isEmpty()){
+                vals.forEach(v-> {
+                    if(!Objects.isNull(v) && v.getColumnNumber() > 0){
+                        recordSender.sendToWriter(v);
                     }
-                    vals = null;
                 });
             }
+            size += vals.size();
+            vals = null;
             return size;
         }
 
@@ -802,22 +902,22 @@ public class SaMysqlReader extends Reader {
                 return 0;
             }
             long size = 0;
+            List<Map<String, Object>> valueList = new ArrayList<>();
             for (Map<String, Object> item : data) {
-                List<Map<String, Object>> values = addSqlColumns(item);
-                size += values.size();
-                values.forEach(value -> {
-                    List<Record> vals = new ArrayList<>();
-                    this.buildRecord(vals,recordSender, value,startTime,endTime);
-                    if(!vals.isEmpty()){
-                        vals.forEach(v-> {
-                            if(!Objects.isNull(v)){
-                                recordSender.sendToWriter(v);
-                            }
-                        });
+                valueList.addAll(addSqlColumns(item));
+            }
+            data.clear();
+            List<Record> vals = new ArrayList<>();
+            this.buildRecord(vals,recordSender, valueList,startTime,endTime);
+            if(!vals.isEmpty()){
+                vals.forEach(v-> {
+                    if(!Objects.isNull(v) && v.getColumnNumber() > 0){
+                        recordSender.sendToWriter(v);
                     }
-                    vals = null;
                 });
             }
+            size += vals.size();
+            vals = null;
             return size;
         }
 
@@ -944,25 +1044,23 @@ public class SaMysqlReader extends Reader {
                                         throw new DataXException(ReaderErrorCode.SQL_EXECUTION_ERROR,String.format("sql:%s",sqlRowNum));
                                     }
                                     long size = 0;
+                                    List<Map<String, Object>> valueList = new ArrayList<>();
                                     for (Map<String, Object> item : data) {
-                                        List<Map<String, Object>> values = addSqlColumns(item);
-                                        size += values.size();
-                                        for (int i = 0; i < values.size(); i++) {
-                                            Map<String, Object> value = values.get(i);
-                                            List<Record> vals = new ArrayList<>();
-                                            this.buildRecord(vals,recordSender, value,t.getStartTime(), t.getEndTime());
-                                            if(!vals.isEmpty()){
-                                                vals.forEach(v-> {
-                                                    if(!Objects.isNull(v)){
-                                                        recordSender.sendToWriter(v);
-                                                    }
-                                                });
-                                            }
-                                            vals = null;
-                                        }
+                                        valueList.addAll(addSqlColumns(item));
                                     }
-                                    finallyCount.addAndGet(size);
                                     data.clear();
+                                    List<Record> vals = new ArrayList<>();
+                                    this.buildRecord(vals,recordSender, valueList,t.getStartTime(), t.getEndTime());
+                                    if(!vals.isEmpty()){
+                                        vals.forEach(v-> {
+                                            if(!Objects.isNull(v) && v.getColumnNumber() > 0){
+                                                recordSender.sendToWriter(v);
+                                            }
+                                        });
+                                    }
+                                    size += vals.size();
+                                    vals = null;
+                                    finallyCount.addAndGet(size);
                                     curPage++;
                                 }
                             }else{
@@ -994,25 +1092,23 @@ public class SaMysqlReader extends Reader {
                                 continue;
                             }
                             long size = 0;
+                            List<Map<String, Object>> valueList = new ArrayList<>();
                             for (Map<String, Object> item : data) {
-                                List<Map<String, Object>> values = addSqlColumns(item);
-                                size += values.size();
-                                for (int i = 0; i < values.size(); i++) {
-                                    Map<String, Object> value = values.get(i);
-                                    List<Record> vals = new ArrayList<>();
-                                    this.buildRecord(vals,recordSender, value, t.getStartTime(), t.getEndTime());
-                                    if(!vals.isEmpty()){
-                                        vals.forEach(v-> {
-                                            if(!Objects.isNull(v)){
-                                                recordSender.sendToWriter(v);
-                                            }
-                                        });
-                                    }
-                                    vals = null;
-                                }
+                                valueList.addAll(addSqlColumns(item));
                             }
-                            finallyCount.addAndGet(size);
                             data.clear();
+                            List<Record> vals = new ArrayList<>();
+                            this.buildRecord(vals,recordSender, valueList, t.getStartTime(), t.getEndTime());
+                            if(!vals.isEmpty()){
+                                vals.forEach(v-> {
+                                    if(!Objects.isNull(v) && v.getColumnNumber() > 0){
+                                        recordSender.sendToWriter(v);
+                                    }
+                                });
+                            }
+                            size += vals.size();
+                            vals = null;
+                            finallyCount.addAndGet(size);
                         }
                     }
                 }
@@ -1031,22 +1127,22 @@ public class SaMysqlReader extends Reader {
                     return 0;
                 }
                 long size = 0;
+                List<Map<String, Object>> valueList = new ArrayList<>();
                 for (Map<String, Object> item : data) {
-                    List<Map<String, Object>> values = addSqlColumns(item);
-                    size += values.size();
-                    values.forEach(value -> {
-                        List<Record> vals = new ArrayList<>();
-                        this.buildRecord(vals,recordSender, value, startTime, endTime);
-                        if(!vals.isEmpty()){
-                            vals.forEach(v-> {
-                                if(!Objects.isNull(v)){
-                                    recordSender.sendToWriter(v);
-                                }
-                            });
+                    valueList.addAll(addSqlColumns(item));
+                }
+                data.clear();
+                List<Record> vals = new ArrayList<>();
+                this.buildRecord(vals,recordSender, valueList,startTime, endTime);
+                if(!vals.isEmpty()){
+                    vals.forEach(v-> {
+                        if(!Objects.isNull(v) && v.getColumnNumber() > 0){
+                            recordSender.sendToWriter(v);
                         }
-                        vals = null;
                     });
                 }
+                size += vals.size();
+                vals = null;
                 return size;
             }
         }

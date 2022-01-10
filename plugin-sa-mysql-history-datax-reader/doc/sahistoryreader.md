@@ -209,7 +209,8 @@
 
   继承com.alibaba.BasePlugin类，重写instance方法（配置文件中plugin.param的配置项会被传递到该方法中），以及定义内部类继承com.alibaba.BasePlugin的内部类BasePlugin.SAPlugin，重写process方法，当前行的数据将以java.util.Map传递。
 
-  ​	特别地，若使用时间过滤方式查询时，map中对应key为：``$$startTime$$``和``$$endTime$$``的值分别对应着``table``配置项中的表当前行数据是在这两个时间段的数据，为`string`类型，格式为``datePattern``配置项的格式，这两个时间不一定是``startTime``、``endTime``配置的值，因为当数据量很大时，会进行时间段的拆分。
+  ​	特别地：1、若使用时间过滤方式查询时，map中对应key为：``$$startTime$$``和``$$endTime$$``的值分别对应着``table``配置项中的表当前行数据是在这两个时间段的数据，为`string`类型，格式为``datePattern``配置项的格式，这两个时间不一定是``startTime``、``endTime``配置的值，因为当数据量很大时，会进行时间段的拆分。
+2、默认情况下，是一行一行的发送给插件，若需要批量获取到数据，可重写``public boolean isMulti()``方法，将返回值修改为返回`true`,则表示需要批量的数据，此时，``public boolean process(Map<String,Object> properties)``方法将不再生效；同时，重写``public boolean process(List<Map<String,Object>> properties)``方法，参数即为批量的数据。
 
 - 部署插件
 

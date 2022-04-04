@@ -29,6 +29,9 @@ public class ConverterFactory {
         converterMap.put("StrEnum",new StrEnumConverter());
         converterMap.put("NumEnum",new NumberEnumConverter());
         converterMap.put("BytesArr2Str",new BytesArr2StrConverter());
+        converterMap.put("Id",new IdConverter());
+        converterMap.put("AutoIncr",new AutoIncrConverter());
+        converterMap.put("CurDate",new CurDateConverter());
     }
 
     public static Converter converter(String type){

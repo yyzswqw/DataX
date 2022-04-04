@@ -268,6 +268,9 @@
 |    StrEnum     |     StrEnumConverter     |                   将字符串的枚举值执行转换                   |
 |    NumEnum     |   NumberEnumConverter    |                    将数字的枚举值执行转换                    |
 |  BytesArr2Str  |  BytesArr2StrConverter   |                    将byte数组转换为字符串                    |
+|       Id       |       IdConverter        |                          生成一个ID                          |
+|    AutoIncr    |    AutoIncrConverter     |                           Long自增                           |
+|    CurDate     |     CurDateConverter     |                         生成当前时间                         |
 
 
 
@@ -282,7 +285,7 @@
 ```json
 "dataConverters":[
     {
-        "type": "BigInt2Date"
+        "type": "Long2Date"
     }
 ]
 ```
@@ -621,5 +624,51 @@
 ]
 ```
 
+### Id
 
+```type```：生成id的类型，可选值：``snowflake_num``：生成数字型雪花ID、``snowflake_str``：生成字符型雪花ID、			``uuid``：生成带`-`的UUID、``uuid_no_separator``：生成不带`-`的UUID，默认值：``snowflake_num``。
+
+```workId```：生成雪花ID时的工作ID，默认值：0。
+
+```dataCenterId```：生成雪花ID时的数据中心ID，默认值：0。
+
+#### 示例
+
+```json
+"dataConverters":[
+    {
+        "type": "Id"
+    }
+]
+```
+
+### AutoIncr
+
+```initValue```：初始自增值，默认值：0。
+
+#### 示例
+
+```json
+"dataConverters":[
+    {
+        "type": "AutoIncr"
+    }
+]
+```
+
+### CurDate
+
+```type```：生成时间的类型，可选值：``date``：生成```java.util.Date```的当前时间、``date_str``：生成当前时间并格式			化，需要搭配```pattern```参数使用、``timestamp``：生成当前时间的时间戳，数字型、``timestamp_str``：生成			当前时间的时间戳的字符串，默认值：``date``。
+
+```pattern```：```type```参数为``date_str``时，格式化的模式，默认值``yyyy-MM-dd HH:mm:ss``。
+
+#### 示例
+
+```json
+"dataConverters":[
+    {
+        "type": "CurDate"
+    }
+]
+```
 

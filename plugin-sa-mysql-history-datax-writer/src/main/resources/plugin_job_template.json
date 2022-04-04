@@ -3,6 +3,11 @@
     "parameter": {
         "url": "jdbc:mysql://10.120.17.177:3306/dimensions",
         "table": "",
+        "sharding": false,
+        "shardingYamlFilePath": "",
+        "customizeProp": {
+
+        },
         "model": "insert",
         "batchSize": 100,
         "insUpNotUpCol": [""],

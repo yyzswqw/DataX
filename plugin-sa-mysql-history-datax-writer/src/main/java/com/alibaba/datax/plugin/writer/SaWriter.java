@@ -2,6 +2,7 @@ package com.alibaba.datax.plugin.writer;
 
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.datax.BasePlugin;
+import com.alibaba.datax.CustomizeProp;
 import com.alibaba.datax.common.element.*;
 import com.alibaba.datax.common.exception.CommonErrorCode;
 import com.alibaba.datax.common.exception.DataXException;
@@ -30,6 +31,7 @@ import java.math.BigInteger;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -51,12 +53,20 @@ public class SaWriter extends Writer {
 
         public void init() {
             this.originalConfig = super.getPluginJobConf();
-            String url = originalConfig.getString(KeyConstant.URL);
-            String table = originalConfig.getString(KeyConstant.TABLE);
-            if(Objects.isNull(url) || Objects.equals("",url) ){
-                throw new DataXException(CommonErrorCode.CONFIG_ERROR,"url不应该为空！");
+            boolean sharding = originalConfig.getBool(KeyConstant.SHARDING, false);
+            String shardingYamlFilePath = originalConfig.getString(KeyConstant.SHARDING_YAML_FILE_PATH, null);
+            String url = originalConfig.getString(KeyConstant.URL,"");
+            String table = originalConfig.getString(KeyConstant.TABLE,"");
+            if(sharding){
+                if(Objects.isNull(shardingYamlFilePath) || Objects.equals("",shardingYamlFilePath.trim()) ){
+                    throw new DataXException(CommonErrorCode.CONFIG_ERROR,"sharding为true时,shardingYamlFilePath不应该为空！");
+                }
+            }else{
+                if(Objects.isNull(url) || Objects.equals("",url.trim()) ){
+                    throw new DataXException(CommonErrorCode.CONFIG_ERROR,"url不应该为空！");
+                }
             }
-            if(Objects.isNull(table) || Objects.equals("",table) ){
+            if(Objects.isNull(table) || Objects.equals("",table.trim()) ){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"table不应该为空！");
             }
             String model = originalConfig.getString(KeyConstant.MODEL);
@@ -81,9 +91,13 @@ public class SaWriter extends Writer {
             }
             String userName = originalConfig.getString(KeyConstant.USER_NAME,"");
             String password = originalConfig.getString(KeyConstant.PASSWORD,"");
+            Map<String, Object> customProp = originalConfig.getMap(KeyConstant.CUSTOMIZE_PROP,new ConcurrentHashMap<>());
+            CustomizeProp.set(KeyConstant.MYSQL_WRITER_CUSTOM_PROP,customProp);
             MysqlUtil.setUrl(url);
             MysqlUtil.setUser(userName);
             MysqlUtil.setPassword(password);
+            MysqlUtil.setSharding(sharding);
+            MysqlUtil.setShardingYamlFilePath(shardingYamlFilePath);
             DataSource dataSource = MysqlUtil.defaultDataSource();
             Connection connection = null;
             Statement statement = null;
@@ -414,7 +428,11 @@ public class SaWriter extends Writer {
             try {
                 connection = MysqlUtil.defaultDataSource().getConnection();
                 preparedStatement = connection.prepareStatement(sql);
-                return preparedStatement.execute();
+                boolean execute = preparedStatement.execute();
+                if(MysqlUtil.isSharding()){
+                    return true;
+                }
+                return execute;
             } catch (SQLException throwables) {
                 throwables.printStackTrace();
                 log.info("执行SQL失败! sql: {}",sql);
@@ -439,6 +457,11 @@ public class SaWriter extends Writer {
 
         public void init() {
             this.readerConfig = super.getPluginJobConf();
+            Object customizeProp = CustomizeProp.get(KeyConstant.MYSQL_WRITER_CUSTOM_PROP);
+            if(Objects.isNull(customizeProp)){
+                Map<String, Object> customProp = readerConfig.getMap(KeyConstant.CUSTOMIZE_PROP,new ConcurrentHashMap<>());
+                CustomizeProp.set(KeyConstant.MYSQL_WRITER_CUSTOM_PROP,customProp);
+            }
             this.tableName = this.readerConfig.getString(KeyConstant.TABLE);
             this.model = this.readerConfig.getString(KeyConstant.MODEL);
             this.batchSize = this.readerConfig.getInt(KeyConstant.BATCH_SIZE,500);

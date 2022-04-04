@@ -163,5 +163,8 @@ public class KeyConstant {
      */
     public static final String CUSTOMIZE_INSERT_UPDATE_JUDGE = "cusInsUpJudge";
 
-
+    public static final String SHARDING = "sharding";
+    public static final String SHARDING_YAML_FILE_PATH = "shardingYamlFilePath";
+    public static final String CUSTOMIZE_PROP = "customizeProp";
+    public static final String MYSQL_WRITER_CUSTOM_PROP = "mysql_writer_custom_prop";
 }

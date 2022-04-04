@@ -33,6 +33,11 @@
                         "url": "jdbc:mysql://10.120.17.177:21050/dimensions",
 						"table": "test",
 						"model":"insertBatch",
+                        "username": "root",
+						"password": "123456",
+                        “sharding”:false,
+                        "shardingYamlFilePath":"",
+                        "customizeProp":{},
 						"batchSize":40,
 						"updateWhereColumn":["id"],
                         "insUpNotUpCol": [""],
@@ -113,13 +118,54 @@
 
 ​		`url`：连接mysql的JDBC URL。
 
-​		```table```：导入数据的目的表名。
+​		```table```：导入数据的目的表名，当`sharding`配置项为`true`时，这里应该配置逻辑表名。
 
 ​		`model`：导入数据时执行的模式，可取值有：``insert``、``insertBatch``、``update``、``insertUpdate``、``replace``、``replaceBatch``、``cusInsertUpdate``。
 
-​		`batchSize`：当``model``为``insertBatch``模式时，批量插入的数量，默认值为500。
+​		`username`：连接mysql的用户名。
 
-​		`		updateWhereColumn`：当``model``为``insertBatch``或者``update``模式时，生成update语句时的where条件列集合，该配置项中的列需要与column配置项的name值相同。建议使用唯一主键。如column配置列有id，name,age，该配置项为["id","name"],则生成的sql为：update 表名 set age = 值1 where id = 值2 and name = 值3，如果从读插件中获取到name的值为空，则where条件中的name为name is null。
+​		`password`：连接mysql的密码。
+
+​		`sharding`：是否使用sharding jdbc数据源，默认值为``false``。
+
+​		`shardingYamlFilePath`：使用sharding jdbc数据源时，sharding jdbc的yml配置文件路径，配置文件内容可参照：https://shardingsphere.apache.org/document/legacy/4.x/document/cn/manual/sharding-jdbc/usage/sharding/，基于Yaml的规则配置。如：
+
+```yml
+dataSources:
+  ds0: !!com.alibaba.druid.pool.DruidDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://10.120.137.31:3308/yx_member?serverTimezone=Asia/Shanghai&useSSL=false&characterEncoding=UTF-8
+    username: root
+    password: 123456
+shardingRule:
+  tables:
+    cdp_member_point_add:
+      actualDataNodes: ds0.cdp_member_point_add_2010,ds0.cdp_member_point_add_2011
+      tableStrategy:
+        complex:
+          shardingColumns: created_date
+          algorithmClassName: com.alibaba.datax.plugin.sharding.DefaultYearComplexKeysShardingAlgorithmImpl
+```
+
+​		其中分片算法实现类，默认提供基于年份分表的算法实现：`com.alibaba.datax.plugin.sharding.DefaultYearComplexKeysShardingAlgorithmImpl`,需要其他实现可使用自定义插件，提供实现类。
+
+​		`customizeProp`：自定义的一些参数配置，没有可不配置，在自定义插件中可通过``CustomizeProp``类中静态方法获取参数值，默认的sharding分片算法`com.alibaba.datax.plugin.sharding.DefaultYearComplexKeysShardingAlgorithmImpl`中可配置相关的参数用于替换默认值。可配置的项有：
+
+```json
+"customizeProp":{
+    “defaultShardingCol”:"分片键（列名），默认为：created_date",
+    "defaultShardingDelimiter":"实际表分隔符，默认为：_",
+    "defaultShardingTableName":"实际表名前缀，默认为yml中配置的逻辑表名",
+    "defaultShardingStartYear":实际表开始的年份，默认1970，整数,
+    "defaultShardingEndYear":实际表中最后一张表的年份，默认运行时当前年份，整数
+}
+```
+
+生成的实际表名为：``defaultShardingTableName``+``defaultShardingDelimiter``+年份。实际表在``defaultShardingStartYear``和``defaultShardingEndYear``之间的年份必须都存在。
+
+​		`batchSize`：当``model``为``insertBatch``和``replaceBatch``模式时，批量插入的数量，默认值为500。
+
+​		`		updateWhereColumn`：当``model``为``insertUpdate``或者``update``模式时，生成update语句时的where条件列集合，该配置项中的列需要与column配置项的name值相同。建议使用唯一主键。如column配置列有id，name,age，该配置项为["id","name"],则生成的sql为：update 表名 set age = 值1 where id = 值2 and name = 值3，如果从读插件中获取到name的值为空，则where条件中的name为name is null。
 
 ​		`insUpNotUpCol`：当`update`时（``update``、``insertUpdate``、``cusInsertUpdate``模式），不更新的列名，该配置项的可配置`column`配置项中`name`。
 

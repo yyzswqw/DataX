@@ -44,7 +44,7 @@ public class IfNull2DefaultConverter implements Converter {
                     return o;
                 }
                 dataConverters.forEach(con->{
-                    con.setConverter(ConverterFactory.converter(con.getType()));
+                    con.setConverter(ConverterFactory.converterPrototype(con.getType()));
                 });
                 cache.put(targetColumnName,dataConverters);
                 cacheTargetColumnName.add(targetColumnName);

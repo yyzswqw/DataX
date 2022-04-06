@@ -25,6 +25,10 @@ public class ConverterUtil {
             if(Objects.isNull(converter)){
                 continue;
             }
+            Map<String, Object> param = dataConverter.getParam();
+            if(Objects.isNull(param)){
+                dataConverter.setParam(new HashMap<>());
+            }
             value = converter.transform(targetColumnName,value,dataConverter.getParam(),resolvedValues);
         }
         return value;

@@ -13,6 +13,7 @@ public class IdConverter implements Converter {
     private static final String TYPE = "type";
     private static final String WORK_ID = "workId";
     private static final String DATA_CENTER_ID = "dataCenterId";
+    private static Snowflake snowflake;
 
     private static final String TYPE_SNOWFLAKE_NUM = "snowflake_num";
     private static final String TYPE_SNOWFLAKE_STR = "snowflake_str";
@@ -26,17 +27,29 @@ public class IdConverter implements Converter {
         String type = (String)param.getOrDefault(TYPE, null);
 
         if(Objects.isNull(type) || NullUtil.isNullOrBlank(type) || TYPE_SNOWFLAKE_NUM.equalsIgnoreCase(type)){
-            Snowflake snowflake = new Snowflake(workId, dataCenterId);
+            if (Objects.isNull(snowflake)) {
+                getSnowflake(workId,dataCenterId);
+            }
             return snowflake.nextId();
         }else if(TYPE_SNOWFLAKE_STR.equalsIgnoreCase(type)){
-            Snowflake snowflake = new Snowflake(workId, dataCenterId);
+            if (Objects.isNull(snowflake)) {
+                getSnowflake(workId,dataCenterId);
+            }
             return snowflake.nextIdStr();
         }else if(TYPE_UUID.equalsIgnoreCase(type)){
             return IdUtil.fastUUID();
         }else if(TYPE_UUID_SEPARATOR.equalsIgnoreCase(type)){
             return IdUtil.fastSimpleUUID();
         }
-        Snowflake snowflake = new Snowflake(workId, dataCenterId);
+        if (Objects.isNull(snowflake)) {
+            getSnowflake(workId,dataCenterId);
+        }
         return snowflake.nextId();
+    }
+
+    private static synchronized void getSnowflake(Integer workId,Integer dataCenterId){
+        if(Objects.isNull(snowflake)){
+            snowflake = new Snowflake(workId, dataCenterId);
+        }
     }
 }

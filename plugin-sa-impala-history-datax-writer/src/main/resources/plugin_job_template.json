@@ -32,6 +32,7 @@
             {
                 "index":1,
                 "name": "",
+                "updateNewValueCol": "",
                 "ifNullGiveUp": true,
                 "dataConverters":[
                     {

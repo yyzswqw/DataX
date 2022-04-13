@@ -139,4 +139,9 @@ public class KeyConstant {
      * 自定义insertUpdate的判断逻辑模式的判断逻辑
      */
     public static final String CUSTOMIZE_INSERT_UPDATE_JUDGE = "cusInsUpJudge";
+
+    /**
+     * update时，作为where条件的列也需要更新为其他值时配置该项
+     */
+    public static final String UPDATE_NEW_VALUE_COLUMN = "updateNewValueCol";
 }

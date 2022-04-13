@@ -192,6 +192,11 @@ public class SaWriter extends Writer {
 
         private static Pattern PATTERN = Pattern.compile("\\{(.*?)}");
 
+        /**
+         * update时，作为where条件的列也需要更新为其他值时配置该项
+         */
+        private Map<String, String> updateNewValueColMap;
+
 
         public void startWrite(RecordReceiver recordReceiver) {
             Record record = null;
@@ -316,7 +321,7 @@ public class SaWriter extends Writer {
             }else if(Objects.equals(KeyConstant.MODEL_UPDATE,this.model)){
                 sql = ColumnDataUtil.transformUpdateSql(KeyConstant.UPDATE,tableName,tableColumnOrderList,this.tableColumnMetaDataMap,
                         this.updateWhereColumn,properties,this.insertUpdateModelNotUpdateColumnList,
-                        this.nullValueIsUpdate);
+                        this.nullValueIsUpdate,this.updateNewValueColMap);
             }else if(Objects.equals(KeyConstant.MODEL_INSERT_UPDATE,this.model)){
                 sql = ColumnDataUtil.transformInsertSql(KeyConstant.INSERT,tableName,tableColumnOrderList,this.tableColumnMetaDataMap,properties);
             }else if(Objects.equals(KeyConstant.MODEL_CUSTOMIZE_INSERT_UPDATE,this.model)){
@@ -358,7 +363,7 @@ public class SaWriter extends Writer {
                     String updateSql = ColumnDataUtil.transformUpdateSql(KeyConstant.UPDATE,
                             tableName,tableColumnOrderList,this.tableColumnMetaDataMap,
                             this.updateWhereColumn,properties,this.insertUpdateModelNotUpdateColumnList,
-                            this.nullValueIsUpdate);
+                            this.nullValueIsUpdate,this.updateNewValueColMap);
                     if(Objects.isNull(updateSql) || Objects.equals("",updateSql)){
                         return;
                     }
@@ -374,7 +379,7 @@ public class SaWriter extends Writer {
                     String updateSql = ColumnDataUtil.transformUpdateSql(KeyConstant.UPDATE,
                             tableName,tableColumnOrderList,this.tableColumnMetaDataMap,
                             this.updateWhereColumn,properties,this.insertUpdateModelNotUpdateColumnList,
-                            this.nullValueIsUpdate);
+                            this.nullValueIsUpdate,this.updateNewValueColMap);
                     if(Objects.isNull(updateSql) || Objects.equals("",updateSql)){
                         return;
                     }
@@ -494,7 +499,14 @@ public class SaWriter extends Writer {
                     con.setConverter(ConverterFactory.converterPrototype(con.getType()));
                 });
             }
-
+            if(Objects.isNull(this.updateNewValueColMap)){
+                this.updateNewValueColMap = new HashMap<>();
+            }
+            saColumnList.forEach(col->{
+                if(!NullUtil.isNullOrBlank(col.getName())&& !NullUtil.isNullOrBlank(col.getUpdateNewValueCol())){
+                    this.updateNewValueColMap.put(col.getName(),col.getUpdateNewValueCol());
+                }
+            });
             String tableColumnMetaDataStr = readerConfig.get(KeyConstant.TABLE_COLUMN_META_DATA, String.class);
             if(Objects.isNull(tableColumnMetaDataStr) || Objects.equals("",tableColumnMetaDataStr)){
                 String table = readerConfig.getString(KeyConstant.TABLE);

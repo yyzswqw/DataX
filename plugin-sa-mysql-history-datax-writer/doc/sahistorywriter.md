@@ -7,7 +7,7 @@
 ```samysqlwriter	```是通过mysql JDBC方式，将数据转换为SQL执行插入语句，如果数据量过大，建议直接使用文件方式导入。```samysqlwriter	```支持七种模式，分别为：``insert``、``insertBatch``、``update``、``insertUpdate``、``replace``、``replaceBatch``、``cusInsertUpdate``。
 
 - ``insert``模式：是通过生成 insert into 表名 values(值1,值2) SQL执行。
--  ``insertBatch``模式：是通过生成 insert into 表名 values(值1,值2) ,(值1,值2) ,(值1,值2) SQL执行。
+- ``insertBatch``模式：是通过生成 insert into 表名 values(值1,值2) ,(值1,值2) ,(值1,值2) SQL执行。
 - ``update``模式：是通过生成 update  表名 set 字段名1 = 值1, 字段名2 = 值2 where 字段名3 = 值3 SQL执行。
 - ``insertUpdate``模式：是``insert``模式和``update``模式相结合，首先尝试insert，失败时执行update。
 - ``replace``模式：同``insert``模式，使用replace into 表名 values(值1,值2) SQL执行。
@@ -35,7 +35,7 @@
 						"model":"insertBatch",
                         "username": "root",
 						"password": "123456",
-                        “sharding”:false,
+                        "sharding":false,
                         "shardingYamlFilePath":"",
                         "customizeProp":{},
 						"batchSize":40,
@@ -75,6 +75,7 @@
 							{
                                 "index":3,
                                 "name": "system_code",
+                                "updateNewValueColMap":"id",
 								"dataConverters":[
 									{
 										"type": "NumEnum",
@@ -153,7 +154,7 @@ shardingRule:
 
 ```json
 "customizeProp":{
-    “defaultShardingCol”:"分片键（列名），默认为：created_date",
+    "defaultShardingCol":"分片键（列名），默认为：created_date",
     "defaultShardingDelimiter":"实际表分隔符，默认为：_",
     "defaultShardingTableName":"实际表名前缀，默认为yml中配置的逻辑表名",
     "defaultShardingStartYear":实际表开始的年份，默认1970，整数,
@@ -185,7 +186,28 @@ shardingRule:
 
 ​		`column.name`：导入目的表的列名。
 
-​		`column.exclude`：是否排除该字段的导入，默认值false。与```column.ifNullGiveUp```搭配使用可用于校验该行数据是否符合业务规则（规范），使用```IfElse```转换器定义规则校验逻辑，符合规则返回非空值，不符合规则返回空值，exclude属性保证非空值不会导入，ifNullGiveUp属性保证空值时丢弃该行数据。
+​		`column.updateNewValueColMap`：当``model``为``insertUpdate``或者``update``模式时，生成update语句时的where条件列也需要更新时，配置该项，意思为更新的值取该配置项中配置列中的值，如有配置如下：model为update模式，则生成的sql为：update tableName set name = 值0，id = 值1，system_code = 值1 where system_code = 值2。值0 代表index为0的值，值1 代表index为1的值，值2 代表index为2的值。
+
+```json
+"column": [
+  {
+    "index":0,
+    "name": "name",
+    "exclude": true
+  },
+  {
+    "index":1,
+    "name": "id"
+  },
+  {
+    "index":2,
+    "name": "system_code",
+    "updateNewValueColMap":"id"
+  }
+]
+```
+
+​	`column.exclude`：是否排除该字段的导入，默认值false。与```column.ifNullGiveUp```搭配使用可用于校验该行数据是否符合业务规则（规范），使用```IfElse```转换器定义规则校验逻辑，符合规则返回非空值，不符合规则返回空值，exclude属性保证非空值不会导入，ifNullGiveUp属性保证空值时丢弃该行数据。
 
 ​		```column.ifNullGiveUp```：当该列值经过转换器转换后为空时，是否丢弃该行数据，默认值为false。
 
@@ -231,41 +253,41 @@ shardingRule:
 
 ## **类型转换**
 
-|    dataX     |       插件类型       |
+|    dataX     |         插件类型         |
 | :----------: | :------------------: |
 | StringColumn |   java.lang.String   |
 |  BoolColumn  |  java.long.Boolean   |
 |  LongColumn  | java.math.BigInteger |
 | DoubleColumn | java.math.BigDecimal |
 |  DateColumn  |    java.util.Date    |
-|     null     |         丢弃         |
+|     null     |          丢弃          |
 | BytesColumn  |        byte[]        |
 
 ## 内置数据转换器
 
-|   转换器type   |        转换器全称        |                             功能                             |
-| :------------: | :----------------------: | :----------------------------------------------------------: |
-|   Long2Date    |    Long2DateConverter    |                  将long转换为java.util.Date                  |
-|    Date2Str    |    Date2StrConverter     |            将java.util.Date转换为java.long.String            |
-|   Date2Long    |    Date2LongConverter    |                  将java.util.Date转换为long                  |
-|   Number2Str   |   Number2StrConverter    |                将数值型转换为java.long.String                |
-|    Str2Long    |    Str2LongConverter     |                 将java.long.String转换为long                 |
-|    Str2Date    |    Str2DateConverter     |            将java.long.String转换为java.util.Date            |
-|  BigInt2Date   | BigInteger2DateConverter |          将java.math.BigInteger转换为java.util.Date          |
-|    Str2Int     |     Str2IntConverter     |          将java.long.String转换为java.long.Integer           |
-|   Str2Double   |   Str2DoubleConverter    |           将java.long.String转换为java.long.Double           |
-| Str2BigDecimal | Str2BigDecimalConverter  |         将java.long.String转换为java.math.BigDecimal         |
-| IfNull2Default | IfNull2DefaultConverter  | 将null或者空串的值转换为给定的默认值，支持默认值再转换为其他类型 |
-|  NotNull2Null  |  NotNull2NullConverter   |                   将不为null的值转换为null                   |
+|    转换器type     |          转换器全称           |                    功能                    |
+| :------------: | :----------------------: | :--------------------------------------: |
+|   Long2Date    |    Long2DateConverter    |          将long转换为java.util.Date          |
+|    Date2Str    |    Date2StrConverter     |    将java.util.Date转换为java.long.String    |
+|   Date2Long    |    Date2LongConverter    |          将java.util.Date转换为long          |
+|   Number2Str   |   Number2StrConverter    |         将数值型转换为java.long.String          |
+|    Str2Long    |    Str2LongConverter     |         将java.long.String转换为long         |
+|    Str2Date    |    Str2DateConverter     |    将java.long.String转换为java.util.Date    |
+|  BigInt2Date   | BigInteger2DateConverter |  将java.math.BigInteger转换为java.util.Date  |
+|    Str2Int     |     Str2IntConverter     |  将java.long.String转换为java.long.Integer   |
+|   Str2Double   |   Str2DoubleConverter    |   将java.long.String转换为java.long.Double   |
+| Str2BigDecimal | Str2BigDecimalConverter  | 将java.long.String转换为java.math.BigDecimal |
+| IfNull2Default | IfNull2DefaultConverter  |    将null或者空串的值转换为给定的默认值，支持默认值再转换为其他类型    |
+|  NotNull2Null  |  NotNull2NullConverter   |             将不为null的值转换为null             |
 |     IfElse     |     IfElseConverter      | if表达式条件成立返回特定表达式值，否则返回else表达式值，使用JavaScript引擎解析 |
 | IfNull2Column  |  IfNull2ColumnConverter  | 如果该列的值为空，则取该转换器配置的列（注意：该转换器配置的列必须配置在该列之前） |
 |  Number2Long   |   Number2LongConverter   | 将数值转换为long数值，支持三种模式。<br />向下取整:默认模式，如值为3.4，转换后为3<br />向上取整：如值为3.6，转换后为4<br />四舍五入：如值为3.6，转换后为4 |
-|    StrEnum     |     StrEnumConverter     |                   将字符串的枚举值执行转换                   |
-|    NumEnum     |   NumberEnumConverter    |                    将数字的枚举值执行转换                    |
-|  BytesArr2Str  |  BytesArr2StrConverter   |                    将byte数组转换为字符串                    |
-|       Id       |       IdConverter        |                          生成一个ID                          |
-|    AutoIncr    |    AutoIncrConverter     |                           Long自增                           |
-|    CurDate     |     CurDateConverter     |                         生成当前时间                         |
+|    StrEnum     |     StrEnumConverter     |               将字符串的枚举值执行转换               |
+|    NumEnum     |   NumberEnumConverter    |               将数字的枚举值执行转换                |
+|  BytesArr2Str  |  BytesArr2StrConverter   |              将byte数组转换为字符串               |
+|       Id       |       IdConverter        |                  生成一个ID                  |
+|    AutoIncr    |    AutoIncrConverter     |                  Long自增                  |
+|    CurDate     |     CurDateConverter     |                  生成当前时间                  |
 
 
 

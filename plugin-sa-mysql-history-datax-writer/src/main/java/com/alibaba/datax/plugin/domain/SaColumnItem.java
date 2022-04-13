@@ -18,6 +18,11 @@ public class SaColumnItem implements Serializable {
 
     private String name;
 
+    /**
+     * update时，作为where条件的列也需要更新为其他值时配置该项
+     */
+    private String updateNewValueCol;
+
     private Boolean ifNullGiveUp = false;
 
     /**

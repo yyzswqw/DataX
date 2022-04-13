@@ -167,4 +167,8 @@ public class KeyConstant {
     public static final String SHARDING_YAML_FILE_PATH = "shardingYamlFilePath";
     public static final String CUSTOMIZE_PROP = "customizeProp";
     public static final String MYSQL_WRITER_CUSTOM_PROP = "mysql_writer_custom_prop";
+    /**
+     * update时，作为where条件的列也需要更新为其他值时配置该项
+     */
+    public static final String UPDATE_NEW_VALUE_COLUMN = "updateNewValueCol";
 }

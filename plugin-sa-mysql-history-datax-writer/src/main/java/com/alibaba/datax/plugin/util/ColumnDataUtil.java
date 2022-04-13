@@ -75,7 +75,7 @@ public class ColumnDataUtil {
     public static String transformUpdateSql(String model,String tableName, List<String> tableColumnOrderList,
                                             Map<String, TableColumnMetaData> tableColumnMetaDataMap,
                                             List<String> updateWhereColumn, Map<String, Object> properties,
-                                            List<String> insertUpdateModelNotUpdateColumnList,boolean nullValueIsUpdate) {
+                                            List<String> insertUpdateModelNotUpdateColumnList,boolean nullValueIsUpdate,Map<String, String> updateNewValueColMap) {
         StringBuilder sb = new StringBuilder().append(model).append(" ").append(tableName).append(" SET ");
         for (String columnName : tableColumnOrderList) {
             if(( updateWhereColumn.contains(columnName) || Objects.isNull(tableColumnMetaDataMap.get(columnName)) ||
@@ -86,6 +86,13 @@ public class ColumnDataUtil {
             TableColumnMetaData tableColumnMetaData = tableColumnMetaDataMap.get(columnName);
             String columnValue = generateColumnValue(columnName, tableColumnMetaData, properties.get(columnName));
             sb.append(columnName).append(" = ").append(columnValue).append(",");
+        }
+        if(Objects.nonNull(updateNewValueColMap) && !updateNewValueColMap.isEmpty()){
+            updateNewValueColMap.forEach((k,v)->{
+                TableColumnMetaData tableColumnMetaData = tableColumnMetaDataMap.get(k);
+                String columnValue = generateColumnValue(k, tableColumnMetaData, properties.get(v));
+                sb.append(k).append(" = ").append(columnValue).append(",");
+            });
         }
         if(sb.toString().endsWith(" SET ")){
 //            这里说明没有一个要修改的属性值

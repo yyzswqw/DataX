@@ -35,6 +35,7 @@
                         "useRowNumber": true,
                         "username": "",
                         "where": "age > 18",
+                        "linkedTable": "left join category c on c.id = apple.categoryId",
                         "pluginColumn": ["testA","testB"],
                         "sqlColumn": [
                             "select 'a' as testA from tableA where id = '{id}'",
@@ -93,9 +94,10 @@
                         },
                         "startTime": "2021-06-14",
                         "taskNum": 5,
+                  		"linkedTable": "left join category c on c.id = apple.categoryId",
                         "timeFieldName": "update_date",
                         "timeInterval": 1000,
-                        “maxQueryNum”: 50000,
+                        "maxQueryNum": 50000,
                         "useRowNumber": false,
                         "username": "",
                         "pluginColumn": ["testA","testB"],
@@ -156,6 +158,8 @@
 ​		`username`：连接数据库的用户名。
 
 ​		`where`：使用任意方式时的查询条件。
+
+​		`linkedTable`：与主表进行连表的语句。
 
 ​		`datePattern`：使用时间字段条件过滤方式时，时间格式。
 
@@ -227,17 +231,17 @@
 
 ###  读插件
 
-|                             java                             |    dataX     |    dataX实际类型     |
-| :----------------------------------------------------------: | :----------: | :------------------: |
-|                             null                             | StringColumn |   java.lang.String   |
-|                       java.lang.String                       | StringColumn |   java.lang.String   |
-|                  boolean/java.long.Boolean                   |  BoolColumn  |  java.lang.Boolean   |
+|                   java                   |    dataX     |      dataX实际类型       |
+| :--------------------------------------: | :----------: | :------------------: |
+|                   null                   | StringColumn |   java.lang.String   |
+|             java.lang.String             | StringColumn |   java.lang.String   |
+|        boolean/java.long.Boolean         |  BoolColumn  |  java.lang.Boolean   |
 | byte/java.long.Byte/short/java.long.Short/int/java.long.Integer/long/java.long.Long/java.math.BigInteger |  LongColumn  | java.math.BigInteger |
-|        float/java.long.Float/double/java.long.Double         | DoubleColumn |   java.lang.String   |
-|                    上述除外的其他数字类型                    | DoubleColumn |   java.lang.String   |
-|                        java.util.Date                        |  DateColumn  |    java.util.Date    |
-|                     java.time.LocalDate                      |  DateColumn  |    java.util.Date    |
-|                   java.time.LocalDateTime                    |  DateColumn  |    java.util.Date    |
-|                        java.sql.Date                         |  DateColumn  |    java.util.Date    |
-|                      java.sql.Timestamp                      |  DateColumn  |    java.util.Date    |
+| float/java.long.Float/double/java.long.Double | DoubleColumn |   java.lang.String   |
+|               上述除外的其他数字类型                | DoubleColumn |   java.lang.String   |
+|              java.util.Date              |  DateColumn  |    java.util.Date    |
+|           java.time.LocalDate            |  DateColumn  |    java.util.Date    |
+|         java.time.LocalDateTime          |  DateColumn  |    java.util.Date    |
+|              java.sql.Date               |  DateColumn  |    java.util.Date    |
+|            java.sql.Timestamp            |  DateColumn  |    java.util.Date    |
 

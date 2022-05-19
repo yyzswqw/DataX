@@ -11,6 +11,7 @@
         "timeInterval": 1000,
         "maxQueryNum": 50000,
         "datePattern": "",
+        "linkedTable": "",
         "taskNum": 10,
         "receivePageSize": 5,
         "sa":{

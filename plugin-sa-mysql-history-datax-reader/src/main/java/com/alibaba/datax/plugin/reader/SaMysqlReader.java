@@ -64,6 +64,7 @@ public class SaMysqlReader extends Reader {
         private String  rowNumSql;
         private String  where;
         private String  tableName;
+        private String  linkedTable;
         private List<String>  columnList;
         private boolean useRowNumber;
 
@@ -160,7 +161,8 @@ public class SaMysqlReader extends Reader {
             if(StrUtil.isBlank(this.tableName) || StrUtil.isBlank(this.mysqlUrl)){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"mysqlUrl和table不能为空");
             }
-            this.rowNumCountSql = "select count(*) from ".concat(tableName).concat(StrUtil.isBlank(where)?"":"  where ".concat(where));
+            this.linkedTable = " ".concat(originalConfig.getString(KeyConstant.LINKED_TABLE, "")).concat(" ");
+            this.rowNumCountSql = "select count(*) from ".concat(tableName).concat(this.linkedTable).concat(StrUtil.isBlank(where)?"":"  where ".concat(where));
             MysqlUtil.setUrl(this.mysqlUrl);
             MysqlUtil.setUser(this.userName);
             MysqlUtil.setPassword(this.password);
@@ -181,20 +183,20 @@ public class SaMysqlReader extends Reader {
                 }
             }
 
-            this.sql = "select ".concat(columnStr).concat(" from ").concat(this.tableName).concat(" where ")
+            this.sql = "select ".concat(columnStr).concat(" from ").concat(this.tableName).concat(this.linkedTable).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where));
 
-            this.sqlRowNum = " select ".concat(columnStr).concat(" from ").concat(this.tableName).concat(" where ")
+            this.sqlRowNum = " select ".concat(columnStr).concat(" from ").concat(this.tableName).concat(this.linkedTable).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where))
                     .concat(" limit {},{}  ");
 
-            this.sqlCount = "select count(*) ".concat(" from ").concat(this.tableName).concat(" where ")
+            this.sqlCount = "select count(*) ".concat(" from ").concat(this.tableName).concat(this.linkedTable).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where));
 
-            this.rowNumSql = "select ".concat(columnStr).concat(" from ").concat(this.tableName)
+            this.rowNumSql = "select ".concat(columnStr).concat(" from ").concat(this.linkedTable).concat(this.tableName)
                     .concat(StrUtil.isBlank(where)?"":"  where ".concat(where)).concat(" limit {},{}");
 
             originalConfig.set(KeyConstant.SQL_TEMPLATE,this.sql);

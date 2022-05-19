@@ -122,4 +122,8 @@ public class KeyConstant {
     public static final String PLUGIN = "plugin";
     public static final String PLUGIN_COLUMN = "pluginColumn";
     public static final String SQL_COLUMN = "sqlColumn";
+    /**
+     * 连表语句
+     */
+    public static final String LINKED_TABLE = "linkedTable";
 }

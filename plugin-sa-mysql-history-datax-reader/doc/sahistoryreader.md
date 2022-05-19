@@ -34,6 +34,7 @@
                         "useRowNumber": true,
                         "username": "",
                         "where": "age > 18",
+                        "linkedTable": "left join category c on c.id = apple.categoryId",
                         "pluginColumn": ["testA","testB"],
                         "sqlColumn": [
                             "select 'a' as testA from tableA where id = '{id}'",
@@ -93,6 +94,7 @@
                         "startTime": "2021-06-14",
                         "taskNum": 5,
                         "timeFieldName": "update_date",
+                        "linkedTable": "left join category c on c.id = apple.categoryId",
                         "timeInterval": 1000,
                         "maxQueryNum": 50000,
                         "useRowNumber": false,
@@ -154,6 +156,8 @@
 
 ​		`where`：使用任意方式时的查询条件。
 
+​                `linkedTable`：与主表进行连表的语句。
+
 ​		`datePattern`：使用时间字段条件过滤方式时，时间格式。
 
 ​		`endTime`：使用时间字段条件过滤方式时，条件结束时间（不包含）。
@@ -210,7 +214,7 @@
   继承com.alibaba.BasePlugin类，重写instance方法（配置文件中plugin.param的配置项会被传递到该方法中），以及定义内部类继承com.alibaba.BasePlugin的内部类BasePlugin.SAPlugin，重写process方法，当前行的数据将以java.util.Map传递。
 
   ​	特别地：1、若使用时间过滤方式查询时，map中对应key为：``$$startTime$$``和``$$endTime$$``的值分别对应着``table``配置项中的表当前行数据是在这两个时间段的数据，为`string`类型，格式为``datePattern``配置项的格式，这两个时间不一定是``startTime``、``endTime``配置的值，因为当数据量很大时，会进行时间段的拆分。
-2、默认情况下，是一行一行的发送给插件，若需要批量获取到数据，可重写``public boolean isMulti()``方法，将返回值修改为返回`true`,则表示需要批量的数据，此时，``public boolean process(Map<String,Object> properties)``方法将不再生效；同时，重写``public boolean process(List<Map<String,Object>> properties)``方法，参数即为批量的数据。
+  2、默认情况下，是一行一行的发送给插件，若需要批量获取到数据，可重写``public boolean isMulti()``方法，将返回值修改为返回`true`,则表示需要批量的数据，此时，``public boolean process(Map<String,Object> properties)``方法将不再生效；同时，重写``public boolean process(List<Map<String,Object>> properties)``方法，参数即为批量的数据。
 
 - 部署插件
 
@@ -224,17 +228,17 @@
 
 ###  读插件
 
-|                             java                             |    dataX     |    dataX实际类型     |
-| :----------------------------------------------------------: | :----------: | :------------------: |
-|                             null                             | StringColumn |   java.lang.String   |
-|                       java.lang.String                       | StringColumn |   java.lang.String   |
-|                  boolean/java.long.Boolean                   |  BoolColumn  |  java.lang.Boolean   |
+|                   java                   |    dataX     |      dataX实际类型       |
+| :--------------------------------------: | :----------: | :------------------: |
+|                   null                   | StringColumn |   java.lang.String   |
+|             java.lang.String             | StringColumn |   java.lang.String   |
+|        boolean/java.long.Boolean         |  BoolColumn  |  java.lang.Boolean   |
 | byte/java.long.Byte/short/java.long.Short/int/java.long.Integer/long/java.long.Long/java.math.BigInteger |  LongColumn  | java.math.BigInteger |
-|        float/java.long.Float/double/java.long.Double         | DoubleColumn |   java.lang.String   |
-|                    上述除外的其他数字类型                    | DoubleColumn |   java.lang.String   |
-|                        java.util.Date                        |  DateColumn  |    java.util.Date    |
-|                     java.time.LocalDate                      |  DateColumn  |    java.util.Date    |
-|                   java.time.LocalDateTime                    |  DateColumn  |    java.util.Date    |
-|                        java.sql.Date                         |  DateColumn  |    java.util.Date    |
-|                      java.sql.Timestamp                      |  DateColumn  |    java.util.Date    |
+| float/java.long.Float/double/java.long.Double | DoubleColumn |   java.lang.String   |
+|               上述除外的其他数字类型                | DoubleColumn |   java.lang.String   |
+|              java.util.Date              |  DateColumn  |    java.util.Date    |
+|           java.time.LocalDate            |  DateColumn  |    java.util.Date    |
+|         java.time.LocalDateTime          |  DateColumn  |    java.util.Date    |
+|              java.sql.Date               |  DateColumn  |    java.util.Date    |
+|            java.sql.Timestamp            |  DateColumn  |    java.util.Date    |
 

@@ -64,6 +64,7 @@ public class SaReader extends Reader {
         private String  rowNumSql;
         private String  where;
         private String  tableName;
+        private String  linkedTable;
         private List<String>  columnList;
         private boolean useRowNumber;
         private String rowNumberOrderBy;
@@ -161,7 +162,8 @@ public class SaReader extends Reader {
             if(StrUtil.isBlank(this.tableName) || StrUtil.isBlank(this.driverUrl)){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"driverUrl和table不能为空");
             }
-            this.rowNumCountSql = "select count(*) from ".concat(tableName).concat(StrUtil.isBlank(where)?"":"  where ".concat(where));
+            this.linkedTable = " ".concat(originalConfig.getString(KeyConstant.LINKED_TABLE, "")).concat(" ");
+            this.rowNumCountSql = "select count(*) from ".concat(tableName).concat(this.linkedTable).concat(StrUtil.isBlank(where)?"":"  where ".concat(where));
             ConnUtil.setUrl(this.driverUrl);
             ConnUtil.setUser(this.userName);
             ConnUtil.setPassword(this.password);
@@ -187,22 +189,22 @@ public class SaReader extends Reader {
                 }
             }
 
-            this.sql = "select ".concat(columnStr).concat(" from ").concat(this.tableName).concat(" where ")
+            this.sql = "select ".concat(columnStr).concat(" from ").concat(this.tableName).concat(this.linkedTable).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where));
 
             this.sqlRowNum = "select top {} * from (  select row_number() over( order by ".concat(timeFieldName).concat(" ) as internalrnums, ")
-                    .concat(columnStr).concat(" from ").concat(this.tableName).concat(" where ")
+                    .concat(columnStr).concat(" from ").concat(this.tableName).concat(this.linkedTable).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where))
                     .concat(" ) t where internalrnums > {} ");
 
-            this.sqlCount = "select count(*) ".concat(" from ").concat(this.tableName).concat(" where ")
+            this.sqlCount = "select count(*) ".concat(" from ").concat(this.tableName).concat(this.linkedTable).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where));
 
             this.rowNumSql = "select top {} * from  (  select row_number() over( order by ".concat(this.rowNumberOrderBy).concat(" ) as internalrnums, ")
-                    .concat(columnStr).concat(" from ").concat(this.tableName)
+                    .concat(columnStr).concat(" from ").concat(this.tableName).concat(this.linkedTable)
                     .concat(StrUtil.isBlank(where)?"":"  where ".concat(where)).concat(" ) t where internalrnums > {} ");
 
             originalConfig.set(KeyConstant.SQL_TEMPLATE,this.sql);

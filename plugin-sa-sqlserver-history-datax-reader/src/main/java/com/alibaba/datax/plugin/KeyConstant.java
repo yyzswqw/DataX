@@ -123,4 +123,5 @@ public class KeyConstant {
     public static final String PLUGIN_COLUMN = "pluginColumn";
     public static final String SQL_COLUMN = "sqlColumn";
     public static final String ROW_NUMBER_ORDER_BY = "rowNumberOrderBy";
+    public static final String LINKED_TABLE = "linkedTable";
 }

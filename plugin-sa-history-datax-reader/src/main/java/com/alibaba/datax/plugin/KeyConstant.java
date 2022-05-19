@@ -119,4 +119,5 @@ public class KeyConstant {
      * 兼容hive版本
      */
     public static final String HIVE_VERSION = "hiveVersion";
+    public static final String LINKED_TABLE = "linkedTable";
 }

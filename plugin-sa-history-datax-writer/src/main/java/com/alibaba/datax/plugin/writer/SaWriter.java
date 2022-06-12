@@ -23,7 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
 public class SaWriter extends Writer {
@@ -32,6 +34,8 @@ public class SaWriter extends Writer {
     public static class Job extends Writer.Job{
 
         private Configuration originalConfig = null;
+        private String type;
+        private Boolean useIDM3;
 
         public List<Configuration> split(int i) {
             List<Configuration> list = new ArrayList<>();
@@ -45,6 +49,7 @@ public class SaWriter extends Writer {
             this.originalConfig = super.getPluginJobConf();
             String sdkDataAddress = originalConfig.getString(KeyConstant.SDK_DATA_ADDRESS);
             Boolean useIDM3 = originalConfig.getBool(KeyConstant.USE_IDM3,true);
+            this.useIDM3 = useIDM3;
             if(StrUtil.isBlank(sdkDataAddress)){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"sdkDataAddress不能为空");
             }
@@ -59,6 +64,7 @@ public class SaWriter extends Writer {
             }
 
             String type = originalConfig.getString(KeyConstant.TYPE);
+            this.type = type;
             JSONArray saColumnJsonArray = originalConfig.get(KeyConstant.SA_COLUMN, JSONArray.class);
             if(Objects.isNull(saColumnJsonArray)){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"column不应该为空！");
@@ -122,6 +128,55 @@ public class SaWriter extends Writer {
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"不支持的type类型");
             }
 
+            for (SaColumnItem saColumnItem : saColumnList) {
+                if(Objects.nonNull(saColumnItem.getExclude()) && saColumnItem.getExclude()){
+                    continue;
+                }
+                StatisticsUtil.addNullCountColumn(saColumnItem.getName());
+            }
+
+        }
+
+        @Override
+        public void post() {
+            long sendSaTotalCount = 0;
+            if(this.useIDM3){
+                if(KeyConstant.TRACK.equalsIgnoreCase(type)){
+                    sendSaTotalCount = EventUtil.IDENTITY_COUNT.longValue();
+                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{}", EventUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount);
+                }else if(KeyConstant.USER.equalsIgnoreCase(type)){
+                    sendSaTotalCount = ProfileUtil.IDENTITY_COUNT.longValue();
+                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{}", ProfileUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount);
+                }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
+                    sendSaTotalCount = ItemSetUtil.SEND_SA_COUNT.longValue();
+                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount);
+                }
+
+            }else{
+                if(KeyConstant.TRACK.equalsIgnoreCase(type)){
+                    sendSaTotalCount = EventUtil.DISTINCT_ID_COUNT.longValue();
+                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{}",EventUtil.DISTINCT_ID_FILTER_COUNT.longValue(),sendSaTotalCount);
+                }else if(KeyConstant.USER.equalsIgnoreCase(type)){
+                    sendSaTotalCount = ProfileUtil.DISTINCT_ID_COUNT.longValue();
+                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{}", ProfileUtil.DISTINCT_ID_FILTER_COUNT.longValue(),sendSaTotalCount);
+                }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
+                    sendSaTotalCount = ItemSetUtil.SEND_SA_COUNT.longValue();
+                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount);
+                }
+            }
+            Map<String, LongAdder> allNullCountColumn = StatisticsUtil.getAllNullCountColumn();
+            StringBuilder sb = new StringBuilder("\n");
+            Set<Map.Entry<String, LongAdder>> entries = allNullCountColumn.entrySet();
+            BigDecimal totalCount = new BigDecimal(sendSaTotalCount + "");
+            BigDecimal oneHundred = new BigDecimal("100");
+            for (Map.Entry<String, LongAdder> entry : entries) {
+                String columnName = entry.getKey();
+                LongAdder longAdder = entry.getValue();
+                long sum = longAdder.sum();
+                sb.append("\t\t列名:【").append(columnName).append("】空值数: ").append(sum).append(" ,空值率：").append(totalCount.compareTo(BigDecimal.ZERO) == 0? 0 :new BigDecimal(sum+"").divide(totalCount,2, RoundingMode.HALF_UP).multiply(oneHundred)).append("% \n");
+            }
+            log.info("列值空值统计：{}",sb.toString());
+            super.post();
         }
 
         public void destroy() {
@@ -259,24 +314,6 @@ public class SaWriter extends Writer {
                     SaUtil.process(sa,type,properties,identityList,this.isUnBind);
                 }
 
-            }
-            if(this.useIDM3){
-                if(KeyConstant.TRACK.equalsIgnoreCase(type)){
-                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{}", EventUtil.IDENTITY_FILTER_COUNT.longValue(),EventUtil.IDENTITY_COUNT.longValue());
-                }else if(KeyConstant.USER.equalsIgnoreCase(type)){
-                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{}", ProfileUtil.IDENTITY_FILTER_COUNT.longValue(),ProfileUtil.IDENTITY_COUNT.longValue());
-                }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
-                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{}",ItemSetUtil.FILTER_COUNT.longValue(), ItemSetUtil.SEND_SA_COUNT.longValue());
-                }
-
-            }else{
-                if(KeyConstant.TRACK.equalsIgnoreCase(type)){
-                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{}",EventUtil.DISTINCT_ID_FILTER_COUNT.longValue(),EventUtil.DISTINCT_ID_COUNT.longValue());
-                }else if(KeyConstant.USER.equalsIgnoreCase(type)){
-                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{}", ProfileUtil.DISTINCT_ID_FILTER_COUNT.longValue(),ProfileUtil.DISTINCT_ID_COUNT.longValue());
-                }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
-                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{}",ItemSetUtil.FILTER_COUNT.longValue(), ItemSetUtil.SEND_SA_COUNT.longValue());
-                }
             }
         }
 

@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.LongAdder;
 
 @Slf4j
@@ -36,6 +37,14 @@ public class EventUtil {
             sa.track(distinctId, eventIsLoginId, eventEventName, properties);
             sa.flush();
             DISTINCT_ID_COUNT.increment();
+            Set<Map.Entry<String, LongAdder>> entries = StatisticsUtil.getAllNullCountColumn().entrySet();
+            for (Map.Entry<String, LongAdder> entry : entries) {
+                String columnName = entry.getKey();
+                LongAdder longAdder = entry.getValue();
+                if (NullUtil.isNullOrBlank(properties.getOrDefault(columnName, null))) {
+                    longAdder.increment();
+                }
+            }
         } catch (Exception e) {
             log.error("Event Exception: {}", e);
             e.printStackTrace();
@@ -81,6 +90,14 @@ public class EventUtil {
             sa.trackById(identity,eventEventName, properties);
             sa.flush();
             IDENTITY_COUNT.increment();
+            Set<Map.Entry<String, LongAdder>> entries = StatisticsUtil.getAllNullCountColumn().entrySet();
+            for (Map.Entry<String, LongAdder> entry : entries) {
+                String columnName = entry.getKey();
+                LongAdder longAdder = entry.getValue();
+                if (NullUtil.isNullOrBlank(properties.getOrDefault(columnName, null))) {
+                    longAdder.increment();
+                }
+            }
         } catch (Exception e) {
             log.error("Event Exception: {}", e);
             e.printStackTrace();

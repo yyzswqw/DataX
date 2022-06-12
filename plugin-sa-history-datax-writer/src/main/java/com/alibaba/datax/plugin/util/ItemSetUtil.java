@@ -6,6 +6,7 @@ import com.sensorsdata.analytics.javasdk.SensorsAnalytics;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.LongAdder;
 
 @Slf4j
@@ -43,6 +44,14 @@ public class ItemSetUtil {
 //            sa.itemSet(addRecord);
             sa.flush();
             SEND_SA_COUNT.increment();
+            Set<Map.Entry<String, LongAdder>> entries = StatisticsUtil.getAllNullCountColumn().entrySet();
+            for (Map.Entry<String, LongAdder> entry : entries) {
+                String columnName = entry.getKey();
+                LongAdder longAdder = entry.getValue();
+                if (NullUtil.isNullOrBlank(properties.getOrDefault(columnName, null))) {
+                    longAdder.increment();
+                }
+            }
         } catch (Exception e) {
             log.info("item Exception: {}", e);
             e.printStackTrace();

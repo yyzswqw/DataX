@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.LongAdder;
 
 @Slf4j
@@ -36,6 +36,14 @@ public class ProfileUtil {
             sa.profileSet(distinctId, userIsLoginId, properties);
             sa.flush();
             DISTINCT_ID_COUNT.increment();
+            Set<Map.Entry<String, LongAdder>> entries = StatisticsUtil.getAllNullCountColumn().entrySet();
+            for (Map.Entry<String, LongAdder> entry : entries) {
+                String columnName = entry.getKey();
+                LongAdder longAdder = entry.getValue();
+                if (NullUtil.isNullOrBlank(properties.getOrDefault(columnName, null))) {
+                    longAdder.increment();
+                }
+            }
         } catch (Exception e) {
             log.error("user Profile Exception: {}", e);
             e.printStackTrace();
@@ -81,6 +89,14 @@ public class ProfileUtil {
             }
             sa.flush();
             IDENTITY_COUNT.increment();
+            Set<Map.Entry<String, LongAdder>> entries = StatisticsUtil.getAllNullCountColumn().entrySet();
+            for (Map.Entry<String, LongAdder> entry : entries) {
+                String columnName = entry.getKey();
+                LongAdder longAdder = entry.getValue();
+                if (NullUtil.isNullOrBlank(properties.getOrDefault(columnName, null))) {
+                    longAdder.increment();
+                }
+            }
         } catch (Exception e) {
             log.error("user Profile Exception: {}", e);
             e.printStackTrace();

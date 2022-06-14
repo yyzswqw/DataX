@@ -143,25 +143,25 @@ public class SaWriter extends Writer {
             if(this.useIDM3){
                 if(KeyConstant.TRACK.equalsIgnoreCase(type)){
                     sendSaTotalCount = EventUtil.IDENTITY_COUNT.longValue();
-                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{}", EventUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount);
+                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{},error count:{}", EventUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount,EventUtil.ERROR_COUNT.sum());
                 }else if(KeyConstant.USER.equalsIgnoreCase(type)){
                     sendSaTotalCount = ProfileUtil.IDENTITY_COUNT.longValue();
-                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{}", ProfileUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount);
+                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{},error count:{}", ProfileUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount,ProfileUtil.ERROR_COUNT.sum());
                 }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
                     sendSaTotalCount = ItemSetUtil.SEND_SA_COUNT.longValue();
-                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount);
+                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{},error count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount,ItemSetUtil.ERROR_COUNT.sum());
                 }
 
             }else{
                 if(KeyConstant.TRACK.equalsIgnoreCase(type)){
                     sendSaTotalCount = EventUtil.DISTINCT_ID_COUNT.longValue();
-                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{}",EventUtil.DISTINCT_ID_FILTER_COUNT.longValue(),sendSaTotalCount);
+                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{},error count:{}",EventUtil.DISTINCT_ID_FILTER_COUNT.longValue(),sendSaTotalCount,EventUtil.ERROR_COUNT.sum());
                 }else if(KeyConstant.USER.equalsIgnoreCase(type)){
                     sendSaTotalCount = ProfileUtil.DISTINCT_ID_COUNT.longValue();
-                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{}", ProfileUtil.DISTINCT_ID_FILTER_COUNT.longValue(),sendSaTotalCount);
+                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{},error count:{}", ProfileUtil.DISTINCT_ID_FILTER_COUNT.longValue(),sendSaTotalCount,ProfileUtil.ERROR_COUNT.sum());
                 }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
                     sendSaTotalCount = ItemSetUtil.SEND_SA_COUNT.longValue();
-                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount);
+                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{},error count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount,ItemSetUtil.ERROR_COUNT.sum());
                 }
             }
             Map<String, LongAdder> allNullCountColumn = StatisticsUtil.getAllNullCountColumn();

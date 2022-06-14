@@ -18,6 +18,7 @@ public class ProfileUtil {
     public static LongAdder  IDENTITY_COUNT = new LongAdder();
     public static LongAdder  DISTINCT_ID_FILTER_COUNT = new LongAdder();
     public static LongAdder  DISTINCT_ID_COUNT = new LongAdder();
+    public static LongAdder  ERROR_COUNT = new LongAdder();
 
     public static void process(SensorsAnalytics sa, Map<String, Object> properties) {
         String userDistinctId = (String) properties.get(KeyConstant.USER_DISTINCT_ID);
@@ -45,8 +46,9 @@ public class ProfileUtil {
                 }
             }
         } catch (Exception e) {
-            log.error("user Profile Exception: {}", e);
-            e.printStackTrace();
+            log.error("user Profile Exception:", e);
+            ERROR_COUNT.increment();
+            log.info("user Profile Exception happened! data：{}",properties);
         }
     }
 
@@ -98,8 +100,9 @@ public class ProfileUtil {
                 }
             }
         } catch (Exception e) {
-            log.error("user Profile Exception: {}", e);
-            e.printStackTrace();
+            log.error("user Profile Exception:", e);
+            ERROR_COUNT.increment();
+            log.info("user Profile happened! identity：{} ,data：{}",identityMap,properties);
         }
     }
 

@@ -18,6 +18,7 @@ public class EventUtil {
     public static LongAdder  IDENTITY_COUNT = new LongAdder();
     public static LongAdder  DISTINCT_ID_FILTER_COUNT = new LongAdder();
     public static LongAdder  DISTINCT_ID_COUNT = new LongAdder();
+    public static LongAdder  ERROR_COUNT = new LongAdder();
 
     public static void process(SensorsAnalytics sa, Map<String, Object> properties) {
         String eventDistinctIdCol = (String) properties.get(KeyConstant.EVENT_DISTINCT_ID_COL);
@@ -46,8 +47,9 @@ public class EventUtil {
                 }
             }
         } catch (Exception e) {
-            log.error("Event Exception: {}", e);
-            e.printStackTrace();
+            log.error("Event Exception:", e);
+            ERROR_COUNT.increment();
+            log.info("Event Exception happened! data：{}",properties);
         }
     }
 
@@ -99,8 +101,9 @@ public class EventUtil {
                 }
             }
         } catch (Exception e) {
-            log.error("Event Exception: {}", e);
-            e.printStackTrace();
+            log.error("Event Exception:", e);
+            ERROR_COUNT.increment();
+            log.info("Event Exception happened! identity：{} ,data：{}",identityMap,properties);
         }
     }
 }

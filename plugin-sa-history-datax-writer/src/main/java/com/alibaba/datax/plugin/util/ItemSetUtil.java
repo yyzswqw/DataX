@@ -14,6 +14,7 @@ public class ItemSetUtil {
 
     public static LongAdder SEND_SA_COUNT = new LongAdder();
     public static LongAdder  FILTER_COUNT = new LongAdder();
+    public static LongAdder  ERROR_COUNT = new LongAdder();
 
     public static void process(SensorsAnalytics sa, Map<String, Object> properties) {
         String itemItemType = (String) properties.get(KeyConstant.ITEM_ITEM_TYPE);
@@ -53,8 +54,9 @@ public class ItemSetUtil {
                 }
             }
         } catch (Exception e) {
-            log.info("item Exception: {}", e);
-            e.printStackTrace();
+            log.error("item Exception:", e);
+            ERROR_COUNT.increment();
+            log.info("Item Exception happened! data：{}",properties);
         }
 
     }

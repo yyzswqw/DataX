@@ -130,6 +130,9 @@ public class SaWriter extends Writer {
             }
 
             for (SaColumnItem saColumnItem : saColumnList) {
+                if(Objects.nonNull(saColumnItem.getIfNullGiveUp()) && saColumnItem.getIfNullGiveUp()){
+                    StatisticsUtil.addNullGiveUpCountColumn(saColumnItem.getName());
+                }
                 if(Objects.nonNull(saColumnItem.getExclude()) && saColumnItem.getExclude()){
                     continue;
                 }

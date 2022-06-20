@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
@@ -143,25 +144,25 @@ public class SaWriter extends Writer {
             if(this.useIDM3){
                 if(KeyConstant.TRACK.equalsIgnoreCase(type)){
                     sendSaTotalCount = EventUtil.IDENTITY_COUNT.longValue();
-                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{},error count:{}", EventUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount,EventUtil.ERROR_COUNT.sum());
+                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{},error count:{},ifNullGiveUp filter count:{}", EventUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount,EventUtil.ERROR_COUNT.sum(),StatisticsUtil.getNullGiveUpTotalCount().get());
                 }else if(KeyConstant.USER.equalsIgnoreCase(type)){
                     sendSaTotalCount = ProfileUtil.IDENTITY_COUNT.longValue();
-                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{},error count:{}", ProfileUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount,ProfileUtil.ERROR_COUNT.sum());
+                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{},error count:{},ifNullGiveUp filter count:{}", ProfileUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount,ProfileUtil.ERROR_COUNT.sum(),StatisticsUtil.getNullGiveUpTotalCount().get());
                 }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
                     sendSaTotalCount = ItemSetUtil.SEND_SA_COUNT.longValue();
-                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{},error count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount,ItemSetUtil.ERROR_COUNT.sum());
+                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{},error count:{},ifNullGiveUp filter count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount,ItemSetUtil.ERROR_COUNT.sum(),StatisticsUtil.getNullGiveUpTotalCount().get());
                 }
 
             }else{
                 if(KeyConstant.TRACK.equalsIgnoreCase(type)){
                     sendSaTotalCount = EventUtil.DISTINCT_ID_COUNT.longValue();
-                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{},error count:{}",EventUtil.DISTINCT_ID_FILTER_COUNT.longValue(),sendSaTotalCount,EventUtil.ERROR_COUNT.sum());
+                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{},error count:{},ifNullGiveUp filter count:{}",EventUtil.DISTINCT_ID_FILTER_COUNT.longValue(),sendSaTotalCount,EventUtil.ERROR_COUNT.sum(),StatisticsUtil.getNullGiveUpTotalCount().get());
                 }else if(KeyConstant.USER.equalsIgnoreCase(type)){
                     sendSaTotalCount = ProfileUtil.DISTINCT_ID_COUNT.longValue();
-                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{},error count:{}", ProfileUtil.DISTINCT_ID_FILTER_COUNT.longValue(),sendSaTotalCount,ProfileUtil.ERROR_COUNT.sum());
+                    log.info("ID Mapping version 2:distinctId is null filter count:{}, send SA count:{},error count:{},ifNullGiveUp filter count:{}", ProfileUtil.DISTINCT_ID_FILTER_COUNT.longValue(),sendSaTotalCount,ProfileUtil.ERROR_COUNT.sum(),StatisticsUtil.getNullGiveUpTotalCount().get());
                 }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
                     sendSaTotalCount = ItemSetUtil.SEND_SA_COUNT.longValue();
-                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{},error count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount,ItemSetUtil.ERROR_COUNT.sum());
+                    log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{},error count:{},ifNullGiveUp filter count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount,ItemSetUtil.ERROR_COUNT.sum(),StatisticsUtil.getNullGiveUpTotalCount().get());
                 }
             }
             Map<String, LongAdder> allNullCountColumn = StatisticsUtil.getAllNullCountColumn();
@@ -176,6 +177,15 @@ public class SaWriter extends Writer {
                 sb.append("\t\t列名:【").append(columnName).append("】空值数: ").append(sum).append(" ,空值率：").append(totalCount.compareTo(BigDecimal.ZERO) == 0? 0 :new BigDecimal(sum+"").divide(totalCount,2, RoundingMode.HALF_UP).multiply(oneHundred)).append("% \n");
             }
             log.info("列值空值统计：{}",sb.toString());
+            StringBuilder nullGiveUpCountSb = new StringBuilder("\n");
+            Map<String, AtomicLong> allNullGiveUpCountColumnMap = StatisticsUtil.getAllNullGiveUpCountColumn();
+            Set<Map.Entry<String, AtomicLong>> allNullGiveUpCountColumnEntrySet = allNullGiveUpCountColumnMap.entrySet();
+            for (Map.Entry<String, AtomicLong> entry : allNullGiveUpCountColumnEntrySet) {
+                String columnName = entry.getKey();
+                AtomicLong atomicLong = entry.getValue();
+                nullGiveUpCountSb.append("\t\t列名:【").append(columnName).append("】过滤数: ").append(atomicLong.get()).append(" \n");
+            }
+            log.info("ifNullGiveUp配置统计：{}",nullGiveUpCountSb.toString());
             super.post();
         }
 
@@ -226,6 +236,8 @@ public class SaWriter extends Writer {
                         Object value = ConverterUtil.convert(col.getName(),null,col,properties);
                         if(NullUtil.isNullOrBlank(value)){
                             if(!NullUtil.isNullOrBlank(col.getIfNullGiveUp()) && col.getIfNullGiveUp()){
+                                StatisticsUtil.addNullGiveUpCountByColumn(col.getName(),1);
+                                StatisticsUtil.getNullGiveUpTotalCount().incrementAndGet();
                                 continue A;
                             }
                             continue;
@@ -236,6 +248,8 @@ public class SaWriter extends Writer {
                         Object value = ConverterUtil.convert(col.getName(),v,col,properties);
                         if(NullUtil.isNullOrBlank(value)){
                             if(!NullUtil.isNullOrBlank(col.getIfNullGiveUp()) && col.getIfNullGiveUp()){
+                                StatisticsUtil.addNullGiveUpCountByColumn(col.getName(),1);
+                                StatisticsUtil.getNullGiveUpTotalCount().incrementAndGet();
                                 continue A;
                             }
                             continue;
@@ -246,6 +260,8 @@ public class SaWriter extends Writer {
                         Object value = ConverterUtil.convert(col.getName(),v,col,properties);
                         if(NullUtil.isNullOrBlank(value)){
                             if(!NullUtil.isNullOrBlank(col.getIfNullGiveUp()) && col.getIfNullGiveUp()){
+                                StatisticsUtil.addNullGiveUpCountByColumn(col.getName(),1);
+                                StatisticsUtil.getNullGiveUpTotalCount().incrementAndGet();
                                 continue A;
                             }
                             continue;
@@ -256,6 +272,8 @@ public class SaWriter extends Writer {
                         Object value = ConverterUtil.convert(col.getName(),v,col,properties);
                         if(NullUtil.isNullOrBlank(value)){
                             if(!NullUtil.isNullOrBlank(col.getIfNullGiveUp()) && col.getIfNullGiveUp()){
+                                StatisticsUtil.addNullGiveUpCountByColumn(col.getName(),1);
+                                StatisticsUtil.getNullGiveUpTotalCount().incrementAndGet();
                                 continue A;
                             }
                             continue;
@@ -266,6 +284,8 @@ public class SaWriter extends Writer {
                         Object value = ConverterUtil.convert(col.getName(),v,col,properties);
                         if(NullUtil.isNullOrBlank(value)){
                             if(!NullUtil.isNullOrBlank(col.getIfNullGiveUp()) && col.getIfNullGiveUp()){
+                                StatisticsUtil.addNullGiveUpCountByColumn(col.getName(),1);
+                                StatisticsUtil.getNullGiveUpTotalCount().incrementAndGet();
                                 continue A;
                             }
                             continue;
@@ -276,6 +296,8 @@ public class SaWriter extends Writer {
                         Object value = ConverterUtil.convert(col.getName(),v,col,properties);
                         if(NullUtil.isNullOrBlank(value)){
                             if(!NullUtil.isNullOrBlank(col.getIfNullGiveUp()) && col.getIfNullGiveUp()){
+                                StatisticsUtil.addNullGiveUpCountByColumn(col.getName(),1);
+                                StatisticsUtil.getNullGiveUpTotalCount().incrementAndGet();
                                 continue A;
                             }
                             continue;
@@ -286,6 +308,8 @@ public class SaWriter extends Writer {
                         Object value = ConverterUtil.convert(col.getName(),v,col,properties);
                         if(NullUtil.isNullOrBlank(value)){
                             if(!NullUtil.isNullOrBlank(col.getIfNullGiveUp()) && col.getIfNullGiveUp()){
+                                StatisticsUtil.addNullGiveUpCountByColumn(col.getName(),1);
+                                StatisticsUtil.getNullGiveUpTotalCount().incrementAndGet();
                                 continue A;
                             }
                             continue;

@@ -132,6 +132,10 @@ public class ColumnDataUtil {
             case Types.LONGNVARCHAR:
             case Types.BLOB:
             case Types.LONGVARBINARY:
+                if(value instanceof byte[]){
+                    char[] chs = Hex.encodeHex((byte[]) value);
+                    return "0x" + new String(chs);
+                }
                 return "'" + value.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'";
             case Types.BINARY:
             case Types.VARBINARY:
@@ -154,6 +158,10 @@ public class ColumnDataUtil {
             case Types.TINYINT:
             case Types.BOOLEAN:
             case Types.BIT:
+                if(value instanceof byte[]){
+                    char[] chs = Hex.encodeHex((byte[]) value);
+                    return "0x" + new String(chs);
+                }
                 return value.toString();
             case Types.TIMESTAMP:
 //                datetime or timestamp

@@ -3,6 +3,7 @@ package com.alibaba.datax.plugin.util;
 import cn.hutool.core.convert.Convert;
 import com.alibaba.datax.plugin.domain.TableColumnMetaData;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Hex;
 
 import java.sql.Types;
 import java.util.Date;
@@ -129,11 +130,19 @@ public class ColumnDataUtil {
             case Types.LONGVARCHAR:
             case Types.NVARCHAR:
             case Types.LONGNVARCHAR:
-            case Types.BINARY:
-            case Types.VARBINARY:
             case Types.BLOB:
             case Types.LONGVARBINARY:
                 return "'" + value.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'";
+            case Types.BINARY:
+            case Types.VARBINARY:
+                byte[] v = null;
+                if(value instanceof String){
+                    v = ((String)value).getBytes();
+                }else{
+                    v = (byte[]) value;
+                }
+                char[] chars = Hex.encodeHex(v);
+                return "0x" + new String(chars);
             case Types.SMALLINT:
             case Types.INTEGER:
             case Types.BIGINT:

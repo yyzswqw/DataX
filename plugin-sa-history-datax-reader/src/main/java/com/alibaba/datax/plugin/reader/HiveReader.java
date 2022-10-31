@@ -183,7 +183,7 @@ public class HiveReader extends Reader {
                     .concat(columnStr).concat(" from ").concat(this.tableName).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where))
-                    .concat(" limit {} ) t ").concat(" where internalrnum between {} and {} ");
+                    .concat(" ) t ").concat(" where internalrnum between {} and {} ");
 
             this.sqlCount = "select count(*) ".concat(" from ").concat(this.tableName).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
@@ -192,7 +192,7 @@ public class HiveReader extends Reader {
             this.rowNumSql = "select t.* ".concat(" from ( select row_number() over () as internalrnum, ")
                     .concat(columnStr).concat(" from ").concat(this.tableName)
                     .concat(StrUtil.isBlank(where)?"":"  where ".concat(where))
-                    .concat(" limit {} ) t ").concat(" where internalrnum between {} and {} ");
+                    .concat(" ) t ").concat(" where internalrnum between {} and {} ");
 
             originalConfig.set(KeyConstant.SQL_TEMPLATE,this.sql);
             originalConfig.set(KeyConstant.SQL_COUNT_TEMPLATE,this.sqlCount);
@@ -505,7 +505,7 @@ public class HiveReader extends Reader {
          * @return
          */
         private long doSupportRowNumber(long pageNo,long pageSize,RecordSender recordSender){
-            String sqlTmp = StrUtil.format(this.rowNumSql, pageNo*pageSize,pageSize*(pageNo-1)+1,pageNo*pageSize);
+            String sqlTmp = StrUtil.format(this.rowNumSql, pageSize*(pageNo-1)+1,pageNo*pageSize);
             log.info("sql:{}",sqlTmp);
             List<Map<String, Object>> data = null;
             try {
@@ -723,7 +723,7 @@ public class HiveReader extends Reader {
                                     long tmpLimit = curPage * this.pageSize;
                                     tmpLimit = tmpLimit>ct?ct:tmpLimit;
                                     log.info("startTime:{},endTime:{}，curPage:{},totalPages:{},pageSize:{}",t.getStartTime(), t.getEndTime(),curPage,rounds,this.pageSize);
-                                    String sqlRowNum = StrUtil.format(this.sqlRowNum, t.getStartTime(), t.getEndTime(),tmpLimit,this.pageSize*(curPage-1)+1,tmpLimit);
+                                    String sqlRowNum = StrUtil.format(this.sqlRowNum, t.getStartTime(), t.getEndTime(),this.pageSize*(curPage-1)+1,tmpLimit);
                                     log.info("sql:{}",sqlRowNum);
                                     try {
                                         data = JdbcUtils.executeQuery(HiveUtil.defaultDataSource(), sqlRowNum);

@@ -44,7 +44,7 @@ public class PluginClassLoader extends URLClassLoader {
 
     public static Object invoke(Class clazz,Object instance,String methodName,Class[] argsClazz,Object[] args){
         try {
-            if(Objects.isNull(args) && args.length <=0){
+            if(Objects.isNull(args) || args.length <=0){
                 return clazz.getMethod(methodName).invoke(instance, args);
             }
             return clazz.getMethod(methodName,argsClazz).invoke(instance, args);

@@ -30,6 +30,11 @@ public class KeyConstant {
      * item类型
      */
     public static final String ITEM = "item";
+
+    /**
+     * itemDelete类型
+     */
+    public static final String ITEM_DELETE = "itemDelete";
     /**
      *  distinctId
      */

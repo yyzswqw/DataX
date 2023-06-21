@@ -125,6 +125,14 @@ public class SaWriter extends Writer {
                         StrUtil.isBlank(itemIdColumn) || !saColumnNameList.contains(itemIdColumn) || (typeIsColumn && !saColumnNameList.contains(itemType))){
                     throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:item时，item属性配置错误或者itemType或者itemIdColumn属性未在column中.若typeIsColumn为false，itemType可以不在column中");
                 }
+            }else if(KeyConstant.ITEM_DELETE.equalsIgnoreCase(type)){
+                String itemType = originalConfig.getString(KeyConstant.ITEM_DELETE.concat(KeyConstant.POINT).concat(KeyConstant.ITEM_TYPE));
+                Boolean typeIsColumn = originalConfig.getBool(KeyConstant.ITEM_DELETE.concat(KeyConstant.POINT).concat(KeyConstant.TYPE_IS_COLUMN));
+                String itemIdColumn = originalConfig.getString(KeyConstant.ITEM_DELETE.concat(KeyConstant.POINT).concat(KeyConstant.ITEM_ID_COLUMN));
+                if(StrUtil.isBlank(itemType) || Objects.isNull(typeIsColumn) ||
+                        StrUtil.isBlank(itemIdColumn) || !saColumnNameList.contains(itemIdColumn) || (typeIsColumn && !saColumnNameList.contains(itemType))){
+                    throw new DataXException(CommonErrorCode.CONFIG_ERROR,"type为:itemDelete时，itemDelete属性配置错误或者itemType或者itemIdColumn属性未在column中.若typeIsColumn为false，itemType可以不在column中");
+                }
             }else{
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"不支持的type类型");
             }
@@ -211,6 +219,7 @@ public class SaWriter extends Writer {
         private Map<String,Object> trackBaseProp = new HashMap<>();
         private Map<String,Object> userBaseProp = new HashMap<>();
         private Map<String,Object> itemBaseProp = new HashMap<>();
+        private Map<String,Object> itemDeleteBaseProp = new HashMap<>();
 
         private List<BasePlugin.SAPlugin> basePluginList;
 
@@ -229,6 +238,8 @@ public class SaWriter extends Writer {
                     properties.putAll(userBaseProp);
                 }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
                     properties.putAll(itemBaseProp);
+                }else if(KeyConstant.ITEM_DELETE.equalsIgnoreCase(type)){
+                    properties.putAll(itemDeleteBaseProp);
                 }else{
                     continue;
                 }
@@ -395,6 +406,13 @@ public class SaWriter extends Writer {
                 itemBaseProp.put(KeyConstant.ITEM_ITEM_TYPE,itemItemType);
                 itemBaseProp.put(KeyConstant.ITEM_TYPE_IS_COLUMN,itemTypeIsColumn);
                 itemBaseProp.put(KeyConstant.ITEM_ITEM_ID_COLUMN,itemItemIdColumn);
+            }else if(KeyConstant.ITEM_DELETE.equalsIgnoreCase(type)){
+                String itemItemType = readerConfig.getString(KeyConstant.ITEM_DELETE.concat(KeyConstant.POINT).concat(KeyConstant.ITEM_TYPE));
+                Boolean itemTypeIsColumn = readerConfig.getBool(KeyConstant.ITEM_DELETE.concat(KeyConstant.POINT).concat(KeyConstant.TYPE_IS_COLUMN));
+                String itemItemIdColumn = readerConfig.getString(KeyConstant.ITEM_DELETE.concat(KeyConstant.POINT).concat(KeyConstant.ITEM_ID_COLUMN));
+                itemDeleteBaseProp.put(KeyConstant.ITEM_ITEM_TYPE,itemItemType);
+                itemDeleteBaseProp.put(KeyConstant.ITEM_TYPE_IS_COLUMN,itemTypeIsColumn);
+                itemDeleteBaseProp.put(KeyConstant.ITEM_ITEM_ID_COLUMN,itemItemIdColumn);
             }
 
             String SaPluginStr = readerConfig.getString(KeyConstant.PLUGIN,"[]");

@@ -52,6 +52,11 @@
             "itemIdColumn": "",
             "typeIsColumn": false
         },
+        "itemDelete": {
+            "itemType": "",
+            "itemIdColumn": "",
+            "typeIsColumn": false
+        },
         "identity": [
             {"idName": "","columnName":"","column":true,"distinctId": true}
         ],

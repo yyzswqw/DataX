@@ -72,6 +72,8 @@ public class SaUtil {
             ProfileUtil.process(sa, map);
         } else if (KeyConstant.ITEM.equalsIgnoreCase(type)) {
             ItemSetUtil.process(sa, map);
+        } else if (KeyConstant.ITEM_DELETE.equalsIgnoreCase(type)) {
+            ItemDeleteUtil.process(sa, map);
         } else {
             log.info("sa类型错误,type:{}", type);
         }
@@ -89,6 +91,8 @@ public class SaUtil {
             ProfileUtil.process(sa, map,identityList,isUnBind);
         } else if (KeyConstant.ITEM.equalsIgnoreCase(type)) {
             ItemSetUtil.process(sa, map);
+        } else if (KeyConstant.ITEM_DELETE.equalsIgnoreCase(type)) {
+            ItemDeleteUtil.process(sa, map);
         } else {
             log.info("sa类型错误,type:{}", type);
         }

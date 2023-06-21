@@ -27,6 +27,11 @@
                             "itemType": "couse",
                             "typeIsColumn": false
                         },
+                        "itemDelete": {
+                          "itemIdColumn": "id1",
+                          "itemType": "couse",
+                          "typeIsColumn": false
+                        },
                         "column": [
                             {
                                 "index":0,
@@ -150,7 +155,7 @@
 
 ​		```isGenerateLog```：是否生成神策json文件，默认值true,如生成文件则需要配合神策导入工具使用，不生成文件时，```sdkDataAddress```参数为神策系统接收数据的url地址，如http://localhost:8106/sa?project=default，在神策系统中可查看。
 
-​		`type`：导入神策分析的数据类型，可取值有：track/user/item，分别对应神策的事件/用户/属性。
+​		`type`：导入神策分析的数据类型，可取值有：track/user/item/itemDelete，分别对应神策的事件/用户/属性。
 
 ​		`useIDM3`：是否使用ID Mapping 3.0，默认true，老版本请设置为false。
 
@@ -197,6 +202,12 @@
 ​		`item.itemType`：type为item时，作为神策itemType的列，如该配置项的值在column列表中，该属性不能存在空值并且`item.typeIsColumn`配置项应该为`true`，否则将以常量值作为神策itemType。
 
 ​		`item.typeIsColumn`：type为item时，`item.itemType`配置项是否在`column`配置项的列表中。
+
+​		`itemDelete.itemIdColumn`：type为itemDelete时，作为神策itemId的列，该属性应该在column列表中，并且该属性不能存在空值。
+
+​		`itemDelete.itemType`：type为itemDelete时，作为神策itemType的列，如该配置项的值在column列表中，该属性不能存在空值并且`item.typeIsColumn`配置项应该为`true`，否则将以常量值作为神策itemType。
+
+​		`itemDelete.typeIsColumn`：type为itemDelete时，`item.itemType`配置项是否在`column`配置项的列表中。
 
 ​		```plugin```：神策写插件的插件列表数组，开发规范见**神策写插件插件规范**。
 

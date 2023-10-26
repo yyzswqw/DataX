@@ -4,6 +4,8 @@
         "mysqlVersion": "1.1.0",
         "username": "",
         "password": "",
+        "stream": false,
+        "streamBatchSize": 2048,
         "column": [""],
         "startTime": "",
         "endTime": "",

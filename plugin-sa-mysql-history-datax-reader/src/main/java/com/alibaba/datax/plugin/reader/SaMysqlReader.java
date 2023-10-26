@@ -28,18 +28,18 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.math.BigInteger;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class SaMysqlReader extends Reader {
 
@@ -60,8 +60,10 @@ public class SaMysqlReader extends Reader {
          * 当使用时间条件过滤时，如果数据量大到不能拆分时，使用分页查询的sql
          */
         private String  sqlRowNum;
+        private String  streamSqlRowNum;
         private String  sqlCount;
         private String  rowNumSql;
+        private String  streamRowNumSql;
         private String  where;
         private String  tableName;
         private String  linkedTable;
@@ -74,17 +76,23 @@ public class SaMysqlReader extends Reader {
             List<Configuration> splittedConfigs = new ArrayList<Configuration>();
 
             Boolean useRowNumber = originalConfig.getBool(KeyConstant.USE_ROW_NUMBER, false);
+            Boolean useStream = originalConfig.getBool(KeyConstant.USE_STREAM, false);
             if(useRowNumber){
-                long pageSize = originalConfig.getLong(KeyConstant.PAGE_SIZE,10000);
-                long receivePageSize = originalConfig.getLong(KeyConstant.RECEIVE_PAGE_SIZE,5);
-                List<List<Long>> rowNumberPartition = supportRowNumberPartition(pageSize,receivePageSize);
-                rowNumberPartition.forEach(item->{
+                if(useStream){
                     Configuration sliceConfig = originalConfig.clone();
-                    sliceConfig.set(KeyConstant.START_PAGE_NO,item.get(0));
-                    sliceConfig.set(KeyConstant.END_PAGE_NO,item.get(1));
-                    sliceConfig.set(KeyConstant.PAGE_SIZE,pageSize);
                     splittedConfigs.add(sliceConfig);
-                });
+                }else{
+                    long pageSize = originalConfig.getLong(KeyConstant.PAGE_SIZE,10000);
+                    long receivePageSize = originalConfig.getLong(KeyConstant.RECEIVE_PAGE_SIZE,5);
+                    List<List<Long>> rowNumberPartition = supportRowNumberPartition(pageSize,receivePageSize);
+                    rowNumberPartition.forEach(item->{
+                        Configuration sliceConfig = originalConfig.clone();
+                        sliceConfig.set(KeyConstant.START_PAGE_NO,item.get(0));
+                        sliceConfig.set(KeyConstant.END_PAGE_NO,item.get(1));
+                        sliceConfig.set(KeyConstant.PAGE_SIZE,pageSize);
+                        splittedConfigs.add(sliceConfig);
+                    });
+                }
 
             }else{
                 String startTime = originalConfig.getString(KeyConstant.START_TIME);
@@ -139,6 +147,8 @@ public class SaMysqlReader extends Reader {
             this.password = originalConfig.getString(KeyConstant.PASSWORD,"");
             this.mysqlUrl = originalConfig.getString(KeyConstant.SA.concat(KeyConstant.POINT).concat(KeyConstant.SA_MYSQL_URL));
             String mysqlVersion = originalConfig.getString(KeyConstant.MYSQL_VERSION,"");
+            Boolean useStream = originalConfig.getBool(KeyConstant.USE_STREAM, false);
+            log.info("use Stream mode : {}",useStream);
 //            校验mysql版本
             String curClassPath = DependencyClassLoader.class.getResource("").getFile();
             String rootPath = curClassPath.substring(curClassPath.lastIndexOf(":")+1, curClassPath.lastIndexOf("!"));
@@ -192,6 +202,10 @@ public class SaMysqlReader extends Reader {
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where))
                     .concat(" limit {},{}  ");
 
+            this.streamSqlRowNum = " select ".concat(columnStr).concat(" from ").concat(this.tableName).concat(this.linkedTable).concat(" where ")
+                    .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
+                    .concat(StrUtil.isBlank(where)?"":"  and ".concat(where));
+
             this.sqlCount = "select count(*) ".concat(" from ").concat(this.tableName).concat(this.linkedTable).concat(" where ")
                     .concat(timeFieldName).concat(" >= '{}' and ").concat(timeFieldName).concat(" < '{}'")
                     .concat(StrUtil.isBlank(where)?"":"  and ".concat(where));
@@ -199,10 +213,15 @@ public class SaMysqlReader extends Reader {
             this.rowNumSql = "select ".concat(columnStr).concat(" from ").concat(this.linkedTable).concat(this.tableName)
                     .concat(StrUtil.isBlank(where)?"":"  where ".concat(where)).concat(" limit {},{}");
 
+            this.streamRowNumSql = "select ".concat(columnStr).concat(" from ").concat(this.linkedTable).concat(this.tableName)
+                    .concat(StrUtil.isBlank(where)?"":"  where ".concat(where));
+
             originalConfig.set(KeyConstant.SQL_TEMPLATE,this.sql);
             originalConfig.set(KeyConstant.SQL_COUNT_TEMPLATE,this.sqlCount);
             originalConfig.set(KeyConstant.ROW_NUM_SQL_TEMPLATE,this.rowNumSql);
             originalConfig.set(KeyConstant.SQL_ROW_NUM_TEMPLATE,this.sqlRowNum);
+            originalConfig.set(KeyConstant.STREAM_SQL_ROW_NUM_TEMPLATE,this.streamSqlRowNum);
+            originalConfig.set(KeyConstant.STREAM_ROW_NUM_SQL_TEMPLATE,this.streamRowNumSql);
 
         }
 
@@ -326,11 +345,15 @@ public class SaMysqlReader extends Reader {
          */
         private String  sqlRowNum;
 
+        private String  streamSqlRowNum;
+
         private String  sqlCount;
 
         private Long  maxQueryNum;
 
         private String  rowNumSql;
+
+        private String  streamRowNumSql;
 
         private String  timePattern;
 
@@ -353,6 +376,10 @@ public class SaMysqlReader extends Reader {
 
         private boolean useRowNumber;
 
+        private boolean useStream;
+
+        private long batchListSize;
+
         private List<BasePlugin.SAPlugin> basePluginList;
 
         private List<String> sqlColumnList;
@@ -363,6 +390,12 @@ public class SaMysqlReader extends Reader {
         public void startRead(RecordSender recordSender) {
             long sum = 0;
             if(useRowNumber){
+                if(this.useStream){
+                    log.info("use Stream Mode [RowNumber] start");
+                    sum = supportStreamRowNumber(recordSender);
+                    log.info("use Stream Mode [RowNumber] end------,本次查询总数：{}",sum);
+                    return ;
+                }
                 Long startPageNo = readerConfig.getLong(KeyConstant.START_PAGE_NO);
                 Long endPageNo = readerConfig.getLong(KeyConstant.END_PAGE_NO);
                 Long pageSize = readerConfig.getLong(KeyConstant.PAGE_SIZE);
@@ -377,6 +410,12 @@ public class SaMysqlReader extends Reader {
             }else{
                 if(Objects.isNull(startTime) || Objects.isNull(endTime)){
                     return;
+                }
+                if(this.useStream){
+                    log.info("use Stream Mode [startTime:{},endTime:{}] start",startTime,endTime);
+                    sum = supportStreamNotRowNumber(startTime, endTime,recordSender);
+                    log.info("use Stream Mode [startTime:{},endTime:{}] end------,本次查询总数：{}",startTime,endTime,sum);
+                    return ;
                 }
                 log.info("startTime:{},endTime:{},start",startTime,endTime);
                 sum = notSupportRowNumber(startTime, endTime, recordSender);
@@ -393,6 +432,8 @@ public class SaMysqlReader extends Reader {
             this.timePattern = readerConfig.getString(KeyConstant.DATE_PATTERN,null);
             this.timeFieldCount = readerConfig.getBool(KeyConstant.TIME_FIELD_COUNT,true);
             this.useRowNumber = readerConfig.getBool(KeyConstant.USE_ROW_NUMBER, true);
+            this.useStream = readerConfig.getBool(KeyConstant.USE_STREAM, false);
+            this.batchListSize = readerConfig.getLong(KeyConstant.STREAM_BATCH_SIZE, 2048);
             if(Objects.isNull(this.timePattern) && !this.useRowNumber){
                 throw new DataXException(CommonErrorCode.CONFIG_ERROR,"useRowNumber为false时,timePattern是必填项，请检查！");
             }
@@ -430,6 +471,9 @@ public class SaMysqlReader extends Reader {
             this.rowNumSql = readerConfig.getString(KeyConstant.ROW_NUM_SQL_TEMPLATE);
             this.sqlRowNum = readerConfig.getString(KeyConstant.SQL_ROW_NUM_TEMPLATE);
             this.pageSize = readerConfig.getLong(KeyConstant.PAGE_SIZE,200000);
+
+            this.streamSqlRowNum = readerConfig.getString(KeyConstant.STREAM_SQL_ROW_NUM_TEMPLATE);
+            this.streamRowNumSql = readerConfig.getString(KeyConstant.STREAM_ROW_NUM_SQL_TEMPLATE);
             this.sqlColumnList = readerConfig.getList(KeyConstant.SQL_COLUMN,new ArrayList<>(),String.class);
 
             String SaPluginStr = readerConfig.getString(KeyConstant.PLUGIN,"[]");
@@ -773,6 +817,108 @@ public class SaMysqlReader extends Reader {
         }
 
 
+        private long supportStreamRowNumber(RecordSender recordSender) {
+            AtomicLong sum = new AtomicLong(0);
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            try {
+                try {
+                    conn = MysqlUtil.defaultDataSource().getConnection();
+                    log.info("Stream Mode Row Number sql : {}",this.streamRowNumSql);
+                    stmt = conn.prepareStatement(this.streamRowNumSql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+                    stmt.setFetchSize(Integer.MIN_VALUE);
+                    rs = stmt.executeQuery();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+                try {
+                    List<Map<String, Object>> batchList = new ArrayList<>(2048);
+                    ResultSetMetaData rsMeta = rs.getMetaData();
+                    while(rs.next()){
+                        try {
+                            Map<String, Object> row = new LinkedHashMap<>();
+                            for (int i = 0, size = rsMeta.getColumnCount(); i < size; ++i) {
+                                String columName = rsMeta.getColumnLabel(i + 1);
+                                Object value = rs.getObject(i + 1);
+                                row.put(columName, value);
+                            }
+                            long siz = sum.addAndGet(1);
+                            if(siz % 1000 == 0){
+                                log.info("stream mode [RowNumber] read cur data size : {}",siz);
+                            }
+                            if(batchList.size() >= this.batchListSize){
+                                List<Record> vals = new ArrayList<>();
+                                for (Map<String, Object> rowTem : batchList) {
+                                    List<Map<String, Object>> valueList = addSqlColumns(rowTem);
+                                    this.buildRecord(vals,recordSender, valueList,null,null);
+                                }
+                                if(!vals.isEmpty()){
+                                    vals.forEach(v-> {
+                                        if(!Objects.isNull(v) && v.getColumnNumber() > 0){
+                                            recordSender.sendToWriter(v);
+                                        }
+                                    });
+                                }
+                                vals.clear();
+                                vals = null;
+                                batchList.clear();
+                            }else{
+                                batchList.add(row);
+                            }
+
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    if(!batchList.isEmpty()){
+                        List<Record> vals = new ArrayList<>();
+                        for (Map<String, Object> rowTem : batchList) {
+                            List<Map<String, Object>> valueList = addSqlColumns(rowTem);
+                            this.buildRecord(vals,recordSender, valueList,null,null);
+                        }
+                        if(!vals.isEmpty()){
+                            vals.forEach(v-> {
+                                if(!Objects.isNull(v) && v.getColumnNumber() > 0){
+                                    recordSender.sendToWriter(v);
+                                }
+                            });
+                        }
+                        vals.clear();
+                        vals = null;
+                        batchList.clear();
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                return sum.get();
+            } finally {
+                if(rs != null){
+                    try {
+                        rs.close();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if(stmt != null){
+                    try {
+                        stmt.close();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if(conn != null){
+                    try {
+                        conn.close();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+            }
+        }
+
         /**
          * 使用mysql limit函数查询分段
          * @param startPageNo
@@ -828,6 +974,147 @@ public class SaMysqlReader extends Reader {
             return size;
         }
 
+
+        private long supportStreamNotRowNumber(String startTime, String endTime, RecordSender recordSender) {
+            AtomicLong sum = new AtomicLong(0);
+            try {
+                Date start = sdf.parse(startTime);
+                Date end = sdf.parse(endTime);
+                long startNano = start.getTime();
+                long endNano = end.getTime();
+
+                //间隔大于一天，每次只查一天的数据
+                String startStr = null;
+                String endStr = null;
+                long oneDayNano = this.timeInterval;
+                if(endNano-startNano > oneDayNano){
+                    while (endNano-startNano > oneDayNano){
+                        startStr = sdf.format(new Date(startNano));
+                        long endTmp = (startNano+oneDayNano)>endNano?endNano:(startNano+oneDayNano);
+                        endStr = sdf.format(new Date(endTmp));
+                        sum.addAndGet(doNotSupportRowNumberStream(startStr,endStr,recordSender));
+                        startNano = endTmp;
+                    }
+                    //最后一次可能没到endNano，并且不满足大于oneDayNano
+                    if( endNano-startNano > 0){
+                        startStr = sdf.format(new Date(startNano));
+                        sum.addAndGet(doNotSupportRowNumberStream(startStr,endTime,recordSender));
+                    }
+                }else{
+                    sum.addAndGet(doNotSupportRowNumberStream(startTime,endTime,recordSender));
+                }
+
+            } catch (ParseException e) {
+                log.error("error:{}",e);
+            }
+
+            return sum.get();
+        }
+
+        private long doNotSupportRowNumberStream(String startTime, String endTime, RecordSender recordSender) {
+            if(startTime.equals(endTime)){
+                return 0;
+            }
+
+            AtomicLong sum = new AtomicLong(0);
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            ResultSet rs = null;
+            try {
+                try {
+                    conn = MysqlUtil.defaultDataSource().getConnection();
+                    String sqlTemp = StrUtil.format(this.streamSqlRowNum, startTime, endTime);
+                    log.info("stream mode sql : {}",sqlTemp);
+                    stmt = conn.prepareStatement(sqlTemp, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+                    stmt.setFetchSize(Integer.MIN_VALUE);
+                    rs = stmt.executeQuery();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+                try {
+                    List<Map<String, Object>> batchList = new ArrayList<>(2048);
+                    ResultSetMetaData rsMeta = rs.getMetaData();
+                    while(rs.next()){
+                        try {
+                            Map<String, Object> row = new LinkedHashMap<>();
+                            for (int i = 0, size = rsMeta.getColumnCount(); i < size; ++i) {
+                                String columName = rsMeta.getColumnLabel(i + 1);
+                                Object value = rs.getObject(i + 1);
+                                row.put(columName, value);
+                            }
+                            long siz = sum.addAndGet(1);
+                            if(siz % 1000 == 0){
+                                log.info("stream mode startTime : {} , endTime : {}  read cur data size : {}", startTime, endTime,siz);
+                            }
+                            if(batchList.size() >= this.batchListSize){
+                                List<Record> vals = new ArrayList<>();
+                                for (Map<String, Object> rowTem : batchList) {
+                                    List<Map<String, Object>> valueList = addSqlColumns(rowTem);
+                                    this.buildRecord(vals,recordSender, valueList,startTime, endTime);
+                                }
+                                if(!vals.isEmpty()){
+                                    vals.forEach(v-> {
+                                        if(!Objects.isNull(v) && v.getColumnNumber() > 0){
+                                            recordSender.sendToWriter(v);
+                                        }
+                                    });
+                                }
+                                vals.clear();
+                                vals = null;
+                                batchList.clear();
+                            }else{
+                                batchList.add(row);
+                            }
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    if(!batchList.isEmpty()){
+                        List<Record> vals = new ArrayList<>();
+                        for (Map<String, Object> rowTem : batchList) {
+                            List<Map<String, Object>> valueList = addSqlColumns(rowTem);
+                            this.buildRecord(vals,recordSender, valueList,startTime, endTime);
+                        }
+                        if(!vals.isEmpty()){
+                            vals.forEach(v-> {
+                                if(!Objects.isNull(v) && v.getColumnNumber() > 0){
+                                    recordSender.sendToWriter(v);
+                                }
+                            });
+                        }
+                        vals.clear();
+                        vals = null;
+                        batchList.clear();
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                return sum.get();
+            } finally {
+                if(rs != null){
+                    try {
+                        rs.close();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if(stmt != null){
+                    try {
+                        stmt.close();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if(conn != null){
+                    try {
+                        conn.close();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+            }
+        }
 
         /**
          * 使用时间查询分段

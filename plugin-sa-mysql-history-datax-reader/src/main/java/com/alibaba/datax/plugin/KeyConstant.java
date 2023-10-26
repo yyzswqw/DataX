@@ -126,4 +126,8 @@ public class KeyConstant {
      * 连表语句
      */
     public static final String LINKED_TABLE = "linkedTable";
+    public static final String USE_STREAM = "stream";
+    public static final String STREAM_SQL_ROW_NUM_TEMPLATE = "streamSqlRowNumTemplate";
+    public static final String STREAM_ROW_NUM_SQL_TEMPLATE = "streamRowNumSqlTemplate";
+    public static final String STREAM_BATCH_SIZE = "streamBatchSize";
 }

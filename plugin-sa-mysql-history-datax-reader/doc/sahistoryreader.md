@@ -136,9 +136,13 @@
 
 ### ``read``
 
-​		```mysqlVersion```：需要使用的mysql版本，该属性取值为读插件的mysqllib目录下的某一文件夹名称，在该文件夹下放入配置的mysql版本所需要的依赖（不要存在子文件夹）,该值必须配置。例如：在该读插件的mysqllib有文件夹1.0.0，则该参数值为1.0.0，在1.0.0目录下需要放置依赖mysql驱动的jar包。
+​		`mysqlVersion`：需要使用的mysql版本，该属性取值为读插件的mysqllib目录下的某一文件夹名称，在该文件夹下放入配置的mysql版本所需要的依赖（不要存在子文件夹）,该值必须配置。例如：在该读插件的mysqllib有文件夹1.0.0，则该参数值为1.0.0，在1.0.0目录下需要放置依赖mysql驱动的jar包。
 
 ​		`column`：mysql表中需要查询的字段名列表。
+
+​		`stream`：是否使用mysql的流式查询,默认false。
+
+​		`streamBatchSize`：`stream`为`true`时，流式查询每批多少条发送给写插件,默认2048。
 
 ​		`pageSize`：使用limit分页方式时，分页的大小，默认值10000。
 

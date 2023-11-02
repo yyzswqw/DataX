@@ -1,6 +1,7 @@
 package com.alibaba.datax.plugin.reader;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.db.handler.RsHandler;
 import cn.hutool.db.sql.SqlExecutor;
@@ -34,12 +35,11 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
 import java.util.Date;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class SaMysqlReader extends Reader {
 
@@ -849,10 +849,14 @@ public class SaMysqlReader extends Reader {
                             }
                             if(batchList.size() >= this.batchListSize){
                                 List<Record> vals = new ArrayList<>();
+                                List<Map<String, Object>> valueList = new ArrayList<>();
                                 for (Map<String, Object> rowTem : batchList) {
-                                    List<Map<String, Object>> valueList = addSqlColumns(rowTem);
-                                    this.buildRecord(vals,recordSender, valueList,null,null);
+                                    List<Map<String, Object>> valueListTemp = addSqlColumns(rowTem);
+                                    if(ObjectUtil.isNotEmpty(valueListTemp)){
+                                        valueList.addAll(valueListTemp);
+                                    }
                                 }
+                                this.buildRecord(vals,recordSender, valueList,null,null);
                                 if(!vals.isEmpty()){
                                     vals.forEach(v-> {
                                         if(!Objects.isNull(v) && v.getColumnNumber() > 0){
@@ -862,6 +866,8 @@ public class SaMysqlReader extends Reader {
                                 }
                                 vals.clear();
                                 vals = null;
+                                valueList.clear();
+                                valueList = null;
                                 batchList.clear();
                             }else{
                                 batchList.add(row);
@@ -874,10 +880,14 @@ public class SaMysqlReader extends Reader {
 
                     if(!batchList.isEmpty()){
                         List<Record> vals = new ArrayList<>();
+                        List<Map<String, Object>> valueList = new ArrayList<>();
                         for (Map<String, Object> rowTem : batchList) {
-                            List<Map<String, Object>> valueList = addSqlColumns(rowTem);
-                            this.buildRecord(vals,recordSender, valueList,null,null);
+                            List<Map<String, Object>> valueListTemp = addSqlColumns(rowTem);
+                            if(ObjectUtil.isNotEmpty(valueListTemp)){
+                                valueList.addAll(valueListTemp);
+                            }
                         }
+                        this.buildRecord(vals,recordSender, valueList,null,null);
                         if(!vals.isEmpty()){
                             vals.forEach(v-> {
                                 if(!Objects.isNull(v) && v.getColumnNumber() > 0){
@@ -887,6 +897,8 @@ public class SaMysqlReader extends Reader {
                         }
                         vals.clear();
                         vals = null;
+                        valueList.clear();
+                        valueList = null;
                         batchList.clear();
                     }
                 } catch (SQLException e) {
@@ -1048,10 +1060,14 @@ public class SaMysqlReader extends Reader {
                             }
                             if(batchList.size() >= this.batchListSize){
                                 List<Record> vals = new ArrayList<>();
+                                List<Map<String, Object>> valueList = new ArrayList<>();
                                 for (Map<String, Object> rowTem : batchList) {
-                                    List<Map<String, Object>> valueList = addSqlColumns(rowTem);
-                                    this.buildRecord(vals,recordSender, valueList,startTime, endTime);
+                                    List<Map<String, Object>> valueListTemp = addSqlColumns(rowTem);
+                                    if(ObjectUtil.isNotEmpty(valueListTemp)){
+                                        valueList.addAll(valueListTemp);
+                                    }
                                 }
+                                this.buildRecord(vals,recordSender, valueList,startTime, endTime);
                                 if(!vals.isEmpty()){
                                     vals.forEach(v-> {
                                         if(!Objects.isNull(v) && v.getColumnNumber() > 0){
@@ -1061,6 +1077,8 @@ public class SaMysqlReader extends Reader {
                                 }
                                 vals.clear();
                                 vals = null;
+                                valueList.clear();
+                                valueList = null;
                                 batchList.clear();
                             }else{
                                 batchList.add(row);
@@ -1071,10 +1089,14 @@ public class SaMysqlReader extends Reader {
                     }
                     if(!batchList.isEmpty()){
                         List<Record> vals = new ArrayList<>();
+                        List<Map<String, Object>> valueList = new ArrayList<>();
                         for (Map<String, Object> rowTem : batchList) {
-                            List<Map<String, Object>> valueList = addSqlColumns(rowTem);
-                            this.buildRecord(vals,recordSender, valueList,startTime, endTime);
+                            List<Map<String, Object>> valueListTemp = addSqlColumns(rowTem);
+                            if(ObjectUtil.isNotEmpty(valueListTemp)){
+                                valueList.addAll(valueListTemp);
+                            }
                         }
+                        this.buildRecord(vals,recordSender, valueList,startTime, endTime);
                         if(!vals.isEmpty()){
                             vals.forEach(v-> {
                                 if(!Objects.isNull(v) && v.getColumnNumber() > 0){
@@ -1084,6 +1106,8 @@ public class SaMysqlReader extends Reader {
                         }
                         vals.clear();
                         vals = null;
+                        valueList.clear();
+                        valueList = null;
                         batchList.clear();
                     }
                 } catch (SQLException e) {

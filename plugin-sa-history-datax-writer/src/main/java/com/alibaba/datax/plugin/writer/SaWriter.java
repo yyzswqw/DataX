@@ -158,7 +158,7 @@ public class SaWriter extends Writer {
                     log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{},error count:{},ifNullGiveUp filter count:{}", EventUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount,EventUtil.ERROR_COUNT.sum(),StatisticsUtil.getNullGiveUpTotalCount().get());
                 }else if(KeyConstant.USER.equalsIgnoreCase(type)){
                     sendSaTotalCount = ProfileUtil.IDENTITY_COUNT.longValue();
-                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{},error count:{},ifNullGiveUp filter count:{}", ProfileUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount,ProfileUtil.ERROR_COUNT.sum(),StatisticsUtil.getNullGiveUpTotalCount().get());
+                    log.info("ID Mapping version 3:identity is null filter count:{}, send SA count:{},error count:{},ifNullGiveUp filter count:{} ,bind identity size is less than 2 count : {}", ProfileUtil.IDENTITY_FILTER_COUNT.longValue(),sendSaTotalCount,ProfileUtil.ERROR_COUNT.sum(),StatisticsUtil.getNullGiveUpTotalCount().get(),ProfileUtil.BIND_IDENTITY_SIZE_FILTER_COUNT.longValue());
                 }else if(KeyConstant.ITEM.equalsIgnoreCase(type)){
                     sendSaTotalCount = ItemSetUtil.SEND_SA_COUNT.longValue();
                     log.info("ITEM Item_Id or Item_type is null filter count:{}, send SA count:{},error count:{},ifNullGiveUp filter count:{}",ItemSetUtil.FILTER_COUNT.longValue(), sendSaTotalCount,ItemSetUtil.ERROR_COUNT.sum(),StatisticsUtil.getNullGiveUpTotalCount().get());
@@ -225,6 +225,8 @@ public class SaWriter extends Writer {
 
         private Boolean useIDM3;
         private Boolean isUnBind = false;
+
+        private Boolean isBind = false;
         private List<IdentityItem> identityList;
 
         public void startWrite(RecordReceiver recordReceiver) {
@@ -349,7 +351,7 @@ public class SaWriter extends Writer {
                 if(!this.useIDM3){
                     SaUtil.process(sa,type,properties);
                 }else{
-                    SaUtil.process(sa,type,properties,identityList,this.isUnBind);
+                    SaUtil.process(sa,type,properties,identityList,this.isUnBind,this.isBind);
                 }
 
             }
@@ -360,6 +362,7 @@ public class SaWriter extends Writer {
             this.type = readerConfig.getString(KeyConstant.TYPE);
             this.useIDM3 = readerConfig.getBool(KeyConstant.USE_IDM3,true);
             this.isUnBind = readerConfig.getBool(KeyConstant.IS_UNBIND,false);
+            this.isBind = readerConfig.getBool(KeyConstant.IS_BIND,false);
             String identityStr = readerConfig.getString(KeyConstant.IDENTITY,"[]");
             this.identityList = JSONObject.parseArray(identityStr, IdentityItem.class);
             JSONArray saColumnJsonArray = readerConfig.get(KeyConstant.SA_COLUMN, JSONArray.class);

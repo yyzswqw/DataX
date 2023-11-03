@@ -124,5 +124,7 @@ public class KeyConstant {
     public static final String USE_IDM3 = "useIDM3";
     public static final String IS_UNBIND = "isUnBind";
 
+    public static final String IS_BIND = "isBind";
+
     public static final String IDENTITY = "identity";
 }

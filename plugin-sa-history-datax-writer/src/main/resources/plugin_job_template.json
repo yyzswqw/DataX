@@ -38,6 +38,7 @@
         "type": "",
         "useIDM3": false,
         "isUnBind": false,
+        "q": false,
         "track": {
             "distinctIdColumn": "",
             "isLoginId": true,

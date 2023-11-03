@@ -80,7 +80,7 @@ public class SaUtil {
 
     }
 
-    public static void process(SensorsAnalytics sa, String type, Map<String, Object> map, List<IdentityItem> identityList,boolean isUnBind) {
+    public static void process(SensorsAnalytics sa, String type, Map<String, Object> map, List<IdentityItem> identityList,boolean isUnBind,boolean isBind) {
         if (StrUtil.isBlank(type)) {
             log.info("sa类型不能为空");
             return;
@@ -88,7 +88,11 @@ public class SaUtil {
         if (KeyConstant.TRACK.equalsIgnoreCase(type)) {
             EventUtil.process(sa, map,identityList);
         } else if (KeyConstant.USER.equalsIgnoreCase(type)) {
-            ProfileUtil.process(sa, map,identityList,isUnBind);
+            if(isBind){
+                ProfileUtil.processBind(sa, map,identityList);
+            }else{
+                ProfileUtil.process(sa, map,identityList,isUnBind);
+            }
         } else if (KeyConstant.ITEM.equalsIgnoreCase(type)) {
             ItemSetUtil.process(sa, map);
         } else if (KeyConstant.ITEM_DELETE.equalsIgnoreCase(type)) {

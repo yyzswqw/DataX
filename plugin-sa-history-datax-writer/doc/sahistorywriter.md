@@ -161,6 +161,8 @@
 
 ​    	`isUnBind`：type为user并且`useIDM3`为true时，是否执行user的unbind操作，默认值false。
 
+​    	`isBind`：type为user并且`useIDM3`为true时，是否执行user的bind操作，默认值false,注意：`isBind`的优先级比`isUnBind`高，即如果`isBind`和`isUnBind`同时为`true`时，将以`isBind`为准。
+
 ​		`identity`：`useIDM3`为true时，需配置，ID Mapping 3.0的用户标识列表。
 
 ​		`identity.idName`：导入到神策系统的用户标识的名称。

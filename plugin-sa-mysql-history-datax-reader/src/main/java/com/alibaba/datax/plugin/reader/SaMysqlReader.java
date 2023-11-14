@@ -835,6 +835,7 @@ public class SaMysqlReader extends Reader {
                 try {
                     List<Map<String, Object>> batchList = new ArrayList<>(2048);
                     ResultSetMetaData rsMeta = rs.getMetaData();
+                    com.alibaba.datax.plugin.util.Timer timer = com.alibaba.datax.plugin.util.Timer.newTimer(10);
                     while(rs.next()){
                         try {
                             Map<String, Object> row = new LinkedHashMap<>();
@@ -844,9 +845,11 @@ public class SaMysqlReader extends Reader {
                                 row.put(columName, value);
                             }
                             long siz = sum.addAndGet(1);
-                            if(siz % 1000 == 0){
+                            if(timer.isTimeout()){
                                 log.info("stream mode [RowNumber] read cur data size : {}",siz);
+                                timer.reset();
                             }
+                            batchList.add(row);
                             if(batchList.size() >= this.batchListSize){
                                 List<Record> vals = new ArrayList<>();
                                 List<Map<String, Object>> valueList = new ArrayList<>();
@@ -869,8 +872,6 @@ public class SaMysqlReader extends Reader {
                                 valueList.clear();
                                 valueList = null;
                                 batchList.clear();
-                            }else{
-                                batchList.add(row);
                             }
 
                         } catch (SQLException e) {
@@ -1046,6 +1047,7 @@ public class SaMysqlReader extends Reader {
                 try {
                     List<Map<String, Object>> batchList = new ArrayList<>(2048);
                     ResultSetMetaData rsMeta = rs.getMetaData();
+                    com.alibaba.datax.plugin.util.Timer timer = com.alibaba.datax.plugin.util.Timer.newTimer(10);
                     while(rs.next()){
                         try {
                             Map<String, Object> row = new LinkedHashMap<>();
@@ -1055,9 +1057,11 @@ public class SaMysqlReader extends Reader {
                                 row.put(columName, value);
                             }
                             long siz = sum.addAndGet(1);
-                            if(siz % 1000 == 0){
+                            if(timer.isTimeout()){
                                 log.info("stream mode startTime : {} , endTime : {}  read cur data size : {}", startTime, endTime,siz);
+                                timer.reset();
                             }
+                            batchList.add(row);
                             if(batchList.size() >= this.batchListSize){
                                 List<Record> vals = new ArrayList<>();
                                 List<Map<String, Object>> valueList = new ArrayList<>();
@@ -1080,8 +1084,6 @@ public class SaMysqlReader extends Reader {
                                 valueList.clear();
                                 valueList = null;
                                 batchList.clear();
-                            }else{
-                                batchList.add(row);
                             }
                         } catch (SQLException e) {
                             e.printStackTrace();

@@ -3,6 +3,7 @@
     "parameter": {
         "sdkDataAddress": "",
         "isGenerateLog": false,
+        "timeFree": false,
         "column": [
             {
                 "index":0,

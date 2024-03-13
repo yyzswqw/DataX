@@ -121,6 +121,7 @@
                         ],
                         "sdkDataAddress": "/datax/datax/logag/log",
                         "isGenerateLog":true,
+                        "timeFree":true,
                         "track": {
                             "distinctIdColumn": "id1",
                             "eventName": "testEventName",
@@ -154,6 +155,8 @@
 ​		`sdkDataAddress`：数据存放路径，神策分析将接收到的数据经过转换后将数据存放的路径或者神策系统接收数据的url地址。
 
 ​		```isGenerateLog```：是否生成神策json文件，默认值true,如生成文件则需要配合神策导入工具使用，不生成文件时，```sdkDataAddress```参数为神策系统接收数据的url地址，如http://localhost:8106/sa?project=default，在神策系统中可查看。
+
+​		```timeFree```：是否开启timeFree功能，默认值false.神策默认只允许导入过去两年的数据，开始则可以绕过该验证。
 
 ​		`type`：导入神策分析的数据类型，可取值有：track/user/item/itemDelete，分别对应神策的事件/用户/属性。
 
@@ -249,41 +252,41 @@
 
 ## **类型转换**
 
-|    dataX     |       插件类型       |
+|    dataX     |         插件类型         |
 | :----------: | :------------------: |
 | StringColumn |   java.lang.String   |
 |  BoolColumn  |  java.long.Boolean   |
 |  LongColumn  | java.math.BigInteger |
 | DoubleColumn | java.math.BigDecimal |
 |  DateColumn  |    java.util.Date    |
-|     null     |         丢弃         |
+|     null     |          丢弃          |
 | BytesColumn  |        byte[]        |
 
 ## 内置数据转换器
 
-|   转换器type   |        转换器全称        |                             功能                             |
-| :------------: | :----------------------: | :----------------------------------------------------------: |
-|   Long2Date    |    Long2DateConverter    |                  将long转换为java.util.Date                  |
-|    Date2Str    |    Date2StrConverter     |            将java.util.Date转换为java.long.String            |
-|   Date2Long    |    Date2LongConverter    |                  将java.util.Date转换为long                  |
-|   Number2Str   |   Number2StrConverter    |                将数值型转换为java.long.String                |
-|    Str2Long    |    Str2LongConverter     |                 将java.long.String转换为long                 |
-|    Str2Date    |    Str2DateConverter     |            将java.long.String转换为java.util.Date            |
-|  BigInt2Date   | BigInteger2DateConverter |          将java.math.BigInteger转换为java.util.Date          |
-|    Str2Int     |     Str2IntConverter     |          将java.long.String转换为java.long.Integer           |
-|   Str2Double   |   Str2DoubleConverter    |           将java.long.String转换为java.long.Double           |
-| Str2BigDecimal | Str2BigDecimalConverter  |         将java.long.String转换为java.math.BigDecimal         |
-| IfNull2Default | IfNull2DefaultConverter  | 将null或者空串的值转换为给定的默认值，支持默认值再转换为其他类型 |
-|  NotNull2Null  |  NotNull2NullConverter   |                   将不为null的值转换为null                   |
+|    转换器type     |          转换器全称           |                    功能                    |
+| :------------: | :----------------------: | :--------------------------------------: |
+|   Long2Date    |    Long2DateConverter    |          将long转换为java.util.Date          |
+|    Date2Str    |    Date2StrConverter     |    将java.util.Date转换为java.long.String    |
+|   Date2Long    |    Date2LongConverter    |          将java.util.Date转换为long          |
+|   Number2Str   |   Number2StrConverter    |         将数值型转换为java.long.String          |
+|    Str2Long    |    Str2LongConverter     |         将java.long.String转换为long         |
+|    Str2Date    |    Str2DateConverter     |    将java.long.String转换为java.util.Date    |
+|  BigInt2Date   | BigInteger2DateConverter |  将java.math.BigInteger转换为java.util.Date  |
+|    Str2Int     |     Str2IntConverter     |  将java.long.String转换为java.long.Integer   |
+|   Str2Double   |   Str2DoubleConverter    |   将java.long.String转换为java.long.Double   |
+| Str2BigDecimal | Str2BigDecimalConverter  | 将java.long.String转换为java.math.BigDecimal |
+| IfNull2Default | IfNull2DefaultConverter  |    将null或者空串的值转换为给定的默认值，支持默认值再转换为其他类型    |
+|  NotNull2Null  |  NotNull2NullConverter   |             将不为null的值转换为null             |
 |     IfElse     |     IfElseConverter      | if表达式条件成立返回特定表达式值，否则返回else表达式值，使用JavaScript引擎解析 |
 | IfNull2Column  |  IfNull2ColumnConverter  | 如果该列的值为空，则取该转换器配置的列（注意：该转换器配置的列必须配置在该列之前） |
 |  Number2Long   |   Number2LongConverter   | 将数值转换为long数值，支持三种模式。<br />向下取整:默认模式，如值为3.4，转换后为3<br />向上取整：如值为3.6，转换后为4<br />四舍五入：如值为3.6，转换后为4 |
-|    StrEnum     |     StrEnumConverter     |                   将字符串的枚举值执行转换                   |
-|    NumEnum     |   NumberEnumConverter    |                    将数字的枚举值执行转换                    |
-|  BytesArr2Str  |  BytesArr2StrConverter   |                    将byte数组转换为字符串                    |
-|       Id       |       IdConverter        |                          生成一个ID                          |
-|    AutoIncr    |    AutoIncrConverter     |                           Long自增                           |
-|    CurDate     |     CurDateConverter     |                         生成当前时间                         |
+|    StrEnum     |     StrEnumConverter     |               将字符串的枚举值执行转换               |
+|    NumEnum     |   NumberEnumConverter    |               将数字的枚举值执行转换                |
+|  BytesArr2Str  |  BytesArr2StrConverter   |              将byte数组转换为字符串               |
+|       Id       |       IdConverter        |                  生成一个ID                  |
+|    AutoIncr    |    AutoIncrConverter     |                  Long自增                  |
+|    CurDate     |     CurDateConverter     |                  生成当前时间                  |
 
 
 

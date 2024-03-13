@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 public class SaUtil {
@@ -24,10 +25,18 @@ public class SaUtil {
      */
     private static boolean isGenerateLog = true;
 
+    private static boolean enableTimeFree = false;
+
     private static volatile SensorsAnalytics instance;
 
     public static void setSdkDataAddress(String sdkDataAddress) {
         SaUtil.sdkDataAddress = sdkDataAddress;
+    }
+
+    public static void setEnableTimeFree(Boolean enableTimeFree) {
+        if(Objects.nonNull(enableTimeFree)){
+            SaUtil.enableTimeFree = enableTimeFree;
+        }
     }
 
     public static void setIsGenerateLog(boolean isGenerateLog) {
@@ -50,6 +59,7 @@ public class SaUtil {
                         }else{
                             instance = new SensorsAnalytics(new BatchConsumer(sdkDataAddress));
                         }
+                        instance.setEnableTimeFree(enableTimeFree);
                         log.info("SensorsAnalytics初始化完成,isGenerateLog:{}",isGenerateLog);
                     } catch (IOException e) {
                         e.printStackTrace();

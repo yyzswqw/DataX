@@ -104,6 +104,11 @@ public class KeyConstant {
      * 是否要生成神策json文件，否则直接通过神策系统接收接口地址传输到神策系统
      */
     public static final String IS_GENERATE_LOG = "isGenerateLog";
+
+    /**
+     * 是否开启timeFree功能
+     */
+    public static final String TIME_FREE = "timeFree";
     /**
      *  sa插件前缀
      */

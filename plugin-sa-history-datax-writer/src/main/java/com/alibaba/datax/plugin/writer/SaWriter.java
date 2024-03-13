@@ -57,11 +57,15 @@ public class SaWriter extends Writer {
             SaUtil.setSdkDataAddress(sdkDataAddress);
             try {
                 boolean isGenerateLog = originalConfig.getBool(KeyConstant.IS_GENERATE_LOG);
-                if(!Objects.isNull(isGenerateLog)){
-                    SaUtil.setIsGenerateLog(isGenerateLog);
-                }
+                SaUtil.setIsGenerateLog(isGenerateLog);
             }catch (Exception e){
                 log.info("isGenerateLog未配置，使用默认值：true");
+            }
+            try {
+                boolean enableTimeFree = originalConfig.getBool(KeyConstant.TIME_FREE);
+                SaUtil.setEnableTimeFree(enableTimeFree);
+            }catch (Exception e){
+                log.info("timeFree未配置，使用默认值：false");
             }
 
             String type = originalConfig.getString(KeyConstant.TYPE);
